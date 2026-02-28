@@ -97,6 +97,12 @@ android {
             keyAlias "androiddebugkey"
             keyPassword "android"
         }
+        customRelease {
+            storeFile file("aamc_upload.jks")
+            storePassword System.getenv("GPLAY_KEYSTORE_PASSWORD")
+            keyAlias "android_github_release"
+            keyPassword System.getenv("GPLAY_KEYSTORE_PASSWORD")
+        }
         googlePlayBuild {
             storeFile file("upload.jks")
             storePassword System.getenv("GPLAY_KEYSTORE_PASSWORD")
@@ -146,6 +152,14 @@ android {
         }
 
         release {
+            
+            // Don't set to true or java.awt will be a.a or something similar.
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.customRelease
+            // defaultConfig already set
+            // multiDexEnabled = true
+            // debuggable = true
             resValue 'string', 'storageProviderAuthorities', 'com.cobblemon.online.scoped.gamefolder'
             resValue 'string', 'application_package', 'com.cobblemon.online'
         }
