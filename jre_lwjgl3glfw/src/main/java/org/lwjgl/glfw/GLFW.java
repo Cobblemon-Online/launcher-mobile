@@ -1020,6 +1020,40 @@ public class GLFW
         } else {
             System.out.println("GLFW: " + System.getenv("AMETHYST_RENDERER") + " detected, defaulting GL context to 3.3");
         }
+
+        // This somehow fixes a bunch of issues like glGetString sigsegv'ing on krypton wrapper.
+        glfwMakeContextCurrent(ptr);
+
+        // Get the real values properly
+        FunctionProvider functionProvider = org.lwjgl.opengl.GL.getFunctionProvider();
+        if (functionProvider != null) {
+            // We don't assume createCapabilities has been called nor do we call it
+            // This was based from LWJGL GL.createCapabilities()
+            long GetError    = functionProvider.getFunctionAddress("glGetError");
+            long GetString   = functionProvider.getFunctionAddress("glGetString");
+            long GetIntegerv = functionProvider.getFunctionAddress("glGetIntegerv");
+
+            // Change the default to whatever GL_VERSION can be extracted to, only if higher ver
+            String versionString = memUTF8Safe(callP(GL_VERSION, GetString));
+            if (versionString != null) {
+                try {
+                    APIVersion apiVersion = apiParseVersion(versionString);
+                    if (3 <= apiVersion.major && apiVersion.major <= 4) glMajor = apiVersion.major;
+                    if (3 <= apiVersion.minor && apiVersion.minor <= 6) glMinor = apiVersion.minor;
+                } catch (Throwable ignored){} // In case the string is invalid/garbage
+            }
+
+            // Try to get values from GL30+ driver directly, only use if higher ver
+            try (MemoryStack stack = stackPush()) {
+                IntBuffer version = stack.ints(0);
+                callPV(GL_MAJOR_VERSION, memAddress(version), GetIntegerv);
+                if (callI(GetError) == GL_NO_ERROR &&
+                        3 <= version.get(0) && version.get(0) <= 4) glMajor = version.get(0);
+                callPV(GL_MINOR_VERSION, memAddress(version), GetIntegerv);
+                if (callI(GetError) == GL_NO_ERROR &&
+                        3 <= version.get(0) && version.get(0) <= 4) glMinor = version.get(0);
+            }
+        }
         win.windowAttribs.put(GLFW_CONTEXT_VERSION_MAJOR, glMajor);
         win.windowAttribs.put(GLFW_CONTEXT_VERSION_MINOR, glMinor);
         mGLFWWindowMap.put(ptr, win);
