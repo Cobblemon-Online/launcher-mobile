@@ -3,7 +3,6 @@ package net.kdt.pojavlaunch;
 import static net.kdt.pojavlaunch.Architecture.archAsString;
 import static net.kdt.pojavlaunch.Architecture.getDeviceArchitecture;
 import static net.kdt.pojavlaunch.Tools.NATIVE_LIB_DIR;
-import static net.kdt.pojavlaunch.Tools.downloadFile;
 import static net.kdt.pojavlaunch.Tools.isOnline;
 
 import android.app.Activity;
@@ -11,25 +10,19 @@ import android.content.Context;
 import android.content.res.AssetManager;
 import android.util.Log;
 
-import androidx.appcompat.app.AlertDialog;
-
 import com.kdt.mcgui.ProgressLayout;
 
 import net.kdt.pojavlaunch.multirt.MultiRTUtils;
 import net.kdt.pojavlaunch.multirt.Runtime;
 import net.kdt.pojavlaunch.progresskeeper.DownloaderProgressWrapper;
-import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
 import net.kdt.pojavlaunch.utils.DownloadUtils;
-import net.kdt.pojavlaunch.utils.JREUtils;
 import net.kdt.pojavlaunch.utils.MathUtils;
 import net.kdt.pojavlaunch.value.launcherprofiles.LauncherProfiles;
 import net.kdt.pojavlaunch.value.launcherprofiles.MinecraftProfile;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 
@@ -170,8 +163,8 @@ public class NewJREUtil {
                 activity.getString(R.string.multirt_nocompatiblert, verInfo.javaVersion.majorVersion));
     }
 
-    public static boolean isValidJavaVersion(int version) {
-        for (InternalRuntime javaVersion : InternalRuntime.values()) {
+    public static boolean isJavaVersionAvailableForDownload(int version) {
+        for (ExternalRuntime javaVersion : ExternalRuntime.values()) {
             if (javaVersion.majorVersion == version) {
                 return true;
             }
@@ -180,34 +173,35 @@ public class NewJREUtil {
     }
 
     private static String getJreSource(int javaVersion, String arch){
-        return String.format("https://github.com/AngelAuraMC/angelauramc-openjdk-build/releases/latest/download/jre%s-android-%s.tar.xz", javaVersion, arch);
+        return String.format("https://github.com/AngelAuraMC/angelauramc-openjdk-build/releases/download/download_jre%1$s/jre%1$s-android-%2$s.tar.xz", javaVersion, arch);
     }
     /**
      * @return whether installation was successful or not
      */
-    private static boolean tryDownloadRuntime(Activity activity, int gameRequiredVersion){
-        if (!isOnline(activity)) return false;
+    private static void tryDownloadRuntime(Context activity, int javaVersion){
+        if (!isOnline(activity)) throw new RuntimeException(activity.getString(R.string.multirt_no_internet));
         String arch = archAsString(getDeviceArchitecture());
-        if (!isValidJavaVersion(gameRequiredVersion)) return false;
+        // Checks for using this method
+        if (!isJavaVersionAvailableForDownload(javaVersion)) throw new RuntimeException("This is not an available JRE version");
+        if ((getDeviceArchitecture() == Architecture.ARCH_X86 && javaVersion >= 21)) throw new RuntimeException("x86 is not supported on Java"+javaVersion);
         try {
-            File outputFile = new File(Tools.DIR_CACHE, String.format("jre%s-android-%s.tar.xz", gameRequiredVersion, arch));
+            File outputFile = new File(Tools.DIR_CACHE, String.format("jre%s-android-%s.tar.xz", javaVersion, arch));
             DownloaderProgressWrapper monitor = new DownloaderProgressWrapper(R.string.newdl_downloading_jre_runtime,
                     ProgressLayout.UNPACK_RUNTIME);
-            monitor.extraString = Integer.toString(gameRequiredVersion);
+            monitor.extraString = Integer.toString(javaVersion);
             DownloadUtils.downloadFileMonitored(
-                    getJreSource(gameRequiredVersion, arch),
+                    getJreSource(javaVersion, arch),
                     outputFile,
                     null,
                     monitor
             );
-            String jreName = "External-" + gameRequiredVersion;
+            String jreName = "External-" + javaVersion;
             MultiRTUtils.installRuntimeNamed(NATIVE_LIB_DIR, new FileInputStream(outputFile), jreName);
             MultiRTUtils.postPrepare(jreName);
             outputFile.delete();
         } catch (IOException e) {
-            throw new RuntimeException("Failed to download Java "+gameRequiredVersion+" for "+arch, e);
+            throw new RuntimeException("Failed to download Java "+javaVersion+" for "+arch, e);
         }
-        return true;
     }
 
     private enum InternalRuntime {
