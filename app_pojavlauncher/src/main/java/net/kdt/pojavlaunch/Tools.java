@@ -480,6 +480,10 @@ public final class Tools {
         // Legacy Fabric needs this to be first or else it uses the wrong lwjgl
         } else javaArgList.add(getLWJGL3ClassPath() + ":" + launchClassPath);
 
+        // Some modloaders (babric) don't fully respect java.libary.path and only use the native lib dir
+        // This arg makes them use it. LWJGL prioritizes this path during native loading as well.
+        javaArgList.add("-Dorg.lwjgl.librarypath="+lwjglNativesDir);
+
         // Forge 1.6.4 crash mitigation
         // https://github.com/MinecraftForge/FML/blob/f1b3381e61fac1a0ae90f521223c6bc613eb4888/common/cpw/mods/fml/common/asm/FMLSanityChecker.java#L192-L208
         // It for some reason fails certification and crashes because it thinks Minecraft is corrupted.
