@@ -874,6 +874,17 @@ public final class Tools {
         return libInfos[0].replaceAll("\\.", "/") + "/" + libInfos[1] + "/" + libInfos[2] + "/" + libInfos[1] + "-" + libInfos[2] + (libInfos.length == 4 ? "-" + libInfos[3] : "") + ".jar";
     }
 
+    private static String getLibClasspath(JMinecraftVersionList.Version info){
+        StringBuilder libClasspath = new StringBuilder();
+        String[] classpath = generateLibClasspath(info);
+        for (String jarFile : classpath) {
+            libClasspath.append(jarFile).append(":");
+        }
+        // Remove the ':' at the end
+        libClasspath.setLength(libClasspath.length() - 1);
+        return libClasspath.toString();
+    }
+
     public static String getClientClasspath(String version) {
         return DIR_HOME_VERSION + "/" + version + "/" + version + ".jar";
     }
