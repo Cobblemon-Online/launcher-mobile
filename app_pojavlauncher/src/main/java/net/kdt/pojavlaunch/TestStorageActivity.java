@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -22,6 +23,10 @@ public class TestStorageActivity extends Activity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.e(
+                "ACTIVITY_FLOW",
+                "ABRIU TEST STORAGE: " + getClass().getName()
+        );
         if(Build.VERSION.SDK_INT >= 23 && Build.VERSION.SDK_INT < 29 && !isStorageAllowed(this)) requestStoragePermission();
         else exit();
     }
@@ -57,16 +62,40 @@ public class TestStorageActivity extends Activity {
     }
 
     private void exit() {
-        if(!Tools.checkStorageRoot(this)) {
+        if (!Tools.checkStorageRoot(this)) {
             startActivity(new Intent(this, MissingStorageActivity.class));
             return;
         }
-        //Initialize constants (implicitly) and preferences after we confirm that we have storage.
+
+        // Inicialização original
         LauncherPreferences.loadPreferences(this);
         AsyncAssetManager.unpackComponents(this);
         AsyncAssetManager.unpackSingleFiles(this);
 
-        Intent intent =  new Intent(this, LauncherActivity.class);
+        Intent intent;
+
+        if (PojavProfile.getAllProfilesList().isEmpty()) {
+            Log.d(
+                    "ACTIVITY_FLOW",
+                    "Nenhuma conta encontrada -> abrindo login customizado"
+            );
+
+            intent = new Intent(
+                    this,
+                    net.kdt.pojavlaunch.ui.LauncherActivity.class
+            );
+        } else {
+            Log.d(
+                    "ACTIVITY_FLOW",
+                    "Conta encontrada -> abrindo launcher principal"
+            );
+
+            intent = new Intent(
+                    this,
+                    LauncherActivity.class
+            );
+        }
+
         startActivity(intent);
         finish();
     }

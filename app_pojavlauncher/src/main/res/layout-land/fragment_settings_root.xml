@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/transparent">
+
+    <!--
+        PAINEL PRINCIPAL
+
+        A COR DE FUNDO DA TELA DE SETTINGS FICA AQUI.
+        Todo o conteúdo interno é transparente.
+    -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#0D0D0D"
+        android:clipToOutline="true">
+
+        <!-- ===================================================== -->
+        <!-- BACKGROUND DO HEADER                                  -->
+        <!-- ===================================================== -->
+
+        <ImageView
+            android:id="@+id/settings_header_background"
+            android:layout_width="match_parent"
+            android:layout_height="118dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/bg_settings_art" />
+
+
+        <!-- ===================================================== -->
+        <!-- FADE DA IMAGEM PARA O FUNDO #0D0D0D                  -->
+        <!--                                                      -->
+        <!-- Começa dentro da imagem e termina exatamente          -->
+        <!-- na mesma cor do fundo do painel.                      -->
+        <!-- ===================================================== -->
+
+        <View
+            android:id="@+id/settings_header_fade"
+            android:layout_width="match_parent"
+            android:layout_height="111dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/settings_header_fade" />
+
+
+        <!-- ===================================================== -->
+        <!-- LOGO                                                  -->
+        <!-- ===================================================== -->
+
+        <ImageView
+            android:id="@+id/settings_logo"
+            android:layout_width="69dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="18dp"
+            android:layout_marginTop="12dp"
+            android:adjustViewBounds="true"
+            android:src="@drawable/ic_launcher_logo" />
+
+
+        <!-- ===================================================== -->
+        <!-- TÍTULO PRINCIPAL                                      -->
+        <!-- ===================================================== -->
+
+        <TextView
+            android:id="@+id/settings_title_main"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|center_horizontal"
+            android:layout_marginTop="22dp"
+
+            android:text="CONFIGURAÇÕES"
+            android:fontFamily="@font/minecraft_standard_bold"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold"
+
+            android:shadowColor="#99000000"
+            android:shadowDx="0"
+            android:shadowDy="2"
+            android:shadowRadius="3" />
+
+
+        <!-- ===================================================== -->
+        <!-- CONTEÚDO                                              -->
+        <!--                                                      -->
+        <!-- IMPORTANTE: NÃO POSSUI COR DE FUNDO.                  -->
+        <!-- Ele começa ainda durante o fade da imagem.            -->
+        <!-- ===================================================== -->
+
+        <LinearLayout
+            android:id="@+id/settings_body"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+
+            android:layout_marginTop="92dp"
+
+            android:orientation="horizontal"
+
+            android:background="@android:color/transparent"
+
+            android:paddingStart="18dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="18dp"
+            android:paddingBottom="14dp">
+
+
+            <!-- ================================================= -->
+            <!-- SIDEBAR                                           -->
+            <!-- ================================================= -->
+
+            <LinearLayout
+                android:layout_width="90dp"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:background="@android:color/transparent">
+
+
+                <!-- VOLTAR -->
+
+                <FrameLayout
+                    android:id="@+id/settings_back"
+                    android:layout_width="83dp"
+                    android:layout_height="wrap_content">
+
+                    <ImageView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:adjustViewBounds="true"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/btn_voltar" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="Voltar"
+                        android:textColor="#FFFFFF"
+                        android:fontFamily="@font/minecraft_standard"
+                        android:textSize="6.5sp" />
+
+                </FrameLayout>
+
+
+                <Space
+                    android:layout_width="match_parent"
+                    android:layout_height="16dp" />
+
+
+                <!-- CONTA -->
+
+                <TextView
+                    android:id="@+id/settings_tab_account"
+                    style="@style/SettingsSidebarItem"
+                    android:text="Conta" />
+
+
+                <!-- MINECRAFT -->
+
+                <TextView
+                    android:id="@+id/settings_tab_minecraft"
+                    style="@style/SettingsSidebarItem"
+                    android:text="Minecraft" />
+
+
+                <!-- JAVA -->
+
+                <TextView
+                    android:id="@+id/settings_tab_java"
+                    style="@style/SettingsSidebarItem"
+                    android:text="Java" />
+
+
+                <!-- LAUNCHER -->
+
+                <TextView
+                    android:id="@+id/settings_tab_launcher"
+                    style="@style/SettingsSidebarItem"
+                    android:text="Launcher" />
+
+
+                <!-- SOBRE -->
+
+                <TextView
+                    android:id="@+id/settings_tab_about"
+                    style="@style/SettingsSidebarItem"
+                    android:text="Sobre" />
+
+            </LinearLayout>
+
+
+            <!-- ================================================= -->
+            <!-- ESPAÇO ENTRE SIDEBAR E CONTEÚDO                   -->
+            <!-- ================================================= -->
+
+            <Space
+                android:layout_width="18dp"
+                android:layout_height="match_parent" />
+
+
+            <!-- ================================================= -->
+            <!-- CONTEÚDO DA TAB                                   -->
+            <!-- ================================================= -->
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+
+                android:layout_weight="1"
+
+                android:orientation="vertical"
+
+                android:background="@android:color/transparent">
+
+
+                <!-- TÍTULO DA TAB -->
+
+                <TextView
+                    android:id="@+id/settings_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+
+                    android:text="Conta"
+                    android:textColor="#FFFFFF"
+
+                    android:textSize="19sp"
+                    android:textStyle="bold" />
+
+
+                <!-- SUBTÍTULO -->
+
+                <TextView
+                    android:id="@+id/settings_subtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+
+                    android:layout_marginTop="1dp"
+
+                    android:text="Gerencie suas contas"
+
+                    android:textColor="#8D8D8D"
+                    android:textSize="10sp" />
+
+
+                <!-- CONTEÚDO REAL DA ABA -->
+
+                <androidx.fragment.app.FragmentContainerView
+                    android:id="@+id/settings_tab_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+
+                    android:layout_weight="1"
+
+                    android:layout_marginTop="10dp"
+
+                    android:background="@android:color/transparent" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+</FrameLayout>

@@ -36,7 +36,8 @@ public class ModpackCreateFragment extends Fragment {
             Activity launcheractivity = requireActivity();
             if (!(launcheractivity instanceof LauncherActivity))
                     throw new IllegalStateException("Cannot import modpack without LauncherActivity");
-            ((LauncherActivity) launcheractivity).modpackImportLauncher.launch(null);
+            ((LauncherActivity) launcheractivity)
+                    .installBundledModpack();
         });;
     }
 

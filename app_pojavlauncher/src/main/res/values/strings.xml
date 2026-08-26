@@ -501,4 +501,9 @@
     </string>
     <string name="not_modpack_file">Not a modpack file!</string>
 
+    <string name="social_discord_url">https://discord.com/invite/cobblemononline</string>
+    <string name="social_instagram_url">https://www.instagram.com/cobblemononline</string>
+    <string name="social_tiktok_url">https://www.tiktok.com/@cobblemononline</string>
+    <string name="social_x_url">https://x.com/cobblemononline</string>
+    <string name="social_youtube_url">https://www.youtube.com/@cobblemononline</string>
 </resources>

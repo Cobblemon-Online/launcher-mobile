@@ -157,15 +157,61 @@ public class DownloadUtils {
         int attempts = 0;
         boolean fileOkay = verifyFile(outputFile, sha1);
         T result = null;
-        while (attempts < 5 && !fileOkay){
+        while (attempts < 5 && !fileOkay) {
             attempts++;
+
             downloadFile(downloadFunction);
-            fileOkay = verifyFile(outputFile, sha1);
+
+            String actualSha1 = getActualSha1(outputFile);
+
+            Log.e(
+                    "MRPACK_SHA1",
+                    "Tentativa " + attempts
+                            + "\nArquivo: " + outputFile.getAbsolutePath()
+                            + "\nTamanho baixado: " + outputFile.length()
+                            + "\nSHA1 esperado: " + sha1
+                            + "\nSHA1 recebido: " + actualSha1
+            );
+
+            fileOkay = actualSha1.equalsIgnoreCase(sha1);
         }
-        if(!fileOkay) throw new SHA1VerificationException("SHA1 verifcation failed after 5 download attempts");
+        if (!fileOkay) {
+
+            Log.e(
+                    "MRPACK_SHA1",
+                    "SHA1 FALHOU"
+                            + " | arquivo=" + outputFile.getAbsolutePath()
+                            + " | esperado=" + sha1
+                            + " | tentativas=" + attempts
+            );
+
+            throw new SHA1VerificationException(
+                    "SHA1 verification failed for "
+                            + outputFile.getAbsolutePath()
+                            + " after "
+                            + attempts
+                            + " download attempts"
+            );
+        }
         return result;
     }
 
+
+    private static String getActualSha1(File file) {
+        if (!file.exists()) {
+            return "<arquivo não existe>";
+        }
+
+        try (InputStream is = new FileInputStream(file)) {
+            return new String(
+                    org.apache.commons.codec.binary.Hex.encodeHex(
+                            org.apache.commons.codec.digest.DigestUtils.sha1(is)
+                    )
+            );
+        } catch (IOException e) {
+            return "<erro lendo SHA1: " + e.getMessage() + ">";
+        }
+    }
     /**
      * Get the content length for a given URL.
      * @param url the URL to get the length for
