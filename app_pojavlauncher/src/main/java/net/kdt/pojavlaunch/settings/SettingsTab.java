@@ -7,14 +7,9 @@ public enum SettingsTab {
             "Gerencie suas contas"
     ),
 
-    MINECRAFT(
-            "Minecraft",
-            "Configurações relacionadas ao jogo"
-    ),
-
-    JAVA(
-            "Java",
-            "Gerencie memória e ambiente Java"
+    MODPACK(
+            "Modpack",
+            "Configurações relacionadas ao modpack"
     ),
 
     LAUNCHER(

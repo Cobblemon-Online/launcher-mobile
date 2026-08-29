@@ -14,6 +14,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
+
+import net.kdt.pojavlaunch.settings.SettingsComposeFragment;
+import net.kdt.pojavlaunch.value.MinecraftAccount;
 import net.kdt.pojavlaunch.views.CenterCropVideoView;
 import android.graphics.drawable.Drawable;
 
@@ -25,8 +28,10 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentContainerView;
+import androidx.lifecycle.ViewTreeLifecycleOwner;
+import androidx.lifecycle.ViewTreeViewModelStoreOwner;
+import androidx.savedstate.ViewTreeSavedStateRegistryOwner;
 
 import com.kdt.mcgui.ProgressLayout;
 import com.kdt.mcgui.mcAccountSpinner;
@@ -43,7 +48,6 @@ import net.kdt.pojavlaunch.modloaders.modpacks.api.ModLoader;
 import net.kdt.pojavlaunch.modloaders.modpacks.api.NotificationDownloadListener;
 import net.kdt.pojavlaunch.modloaders.modpacks.imagecache.IconCacheJanitor;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
-import net.kdt.pojavlaunch.settings.SettingsRootFragment;
 import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
 import net.kdt.pojavlaunch.progresskeeper.TaskCountListener;
 import net.kdt.pojavlaunch.services.ProgressServiceKeeper;
@@ -275,6 +279,12 @@ public class LauncherActivity extends BaseActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        View decorView = getWindow().getDecorView();
+
+        ViewTreeLifecycleOwner.set(decorView, this);
+        ViewTreeViewModelStoreOwner.set(decorView, this);
+        ViewTreeSavedStateRegistryOwner.set(decorView, this);
+
         Log.d(
                 "LAUNCHER_UI",
                 "Abrindo nova tela principal"
@@ -303,6 +313,28 @@ public class LauncherActivity extends BaseActivity {
         mAccountSpinner.post(this::setupUserHeader);
     }
 
+    private void setupSettingsCompose() {
+
+        if (
+                getSupportFragmentManager()
+                        .findFragmentByTag("SETTINGS_COMPOSE") != null
+        ) {
+            return;
+        }
+
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(
+                        R.id.container_fragment,
+                        new SettingsComposeFragment(),
+                        "SETTINGS_COMPOSE"
+                )
+                .commit();
+    }
+
+    public void showHomeFromSettings() {
+        showHome();
+    }
 
     // =========================================================
     // Views
@@ -868,14 +900,7 @@ public class LauncherActivity extends BaseActivity {
         );
 
         mSettingsButton.setOnClickListener(
-                view -> {
-
-                    if (isSettingsOpen()) {
-                        showHome();
-                    } else {
-                        showSettings();
-                    }
-                }
+                view -> showSettings()
         );
     }
 
@@ -893,61 +918,52 @@ public class LauncherActivity extends BaseActivity {
 
     private void showSettings() {
 
-        mHomeContent.setVisibility(
-                View.GONE
-        );
+        mHomeContent.setVisibility(View.GONE);
 
-        mSettingsContainer.setVisibility(
-                View.VISIBLE
-        );
+        mSettingsContainer.setVisibility(View.VISIBLE);
 
-        Fragment existing =
-                getSupportFragmentManager()
-                        .findFragmentByTag(
-                                SETTING_FRAGMENT_TAG
-                        );
-
-        if (existing != null) {
-            return;
-        }
-
-        getSupportFragmentManager()
-                .beginTransaction()
-                .replace(
-                        R.id.container_fragment,
-                        SettingsRootFragment.class,
-                        null,
-                        SETTING_FRAGMENT_TAG
-                )
-                .commit();
+        setupSettingsCompose();
     }
 
 
     private void showHome() {
 
-        Fragment settingsFragment =
-                getSupportFragmentManager()
-                        .findFragmentByTag(
-                                SETTING_FRAGMENT_TAG
-                        );
+        mSettingsContainer.setVisibility(View.GONE);
+        mHomeContent.setVisibility(View.VISIBLE);
 
-        if (settingsFragment != null) {
-
-            getSupportFragmentManager()
-                    .beginTransaction()
-                    .remove(settingsFragment)
-                    .commit();
-        }
-
-        mSettingsContainer.setVisibility(
-                View.GONE
-        );
-
-        mHomeContent.setVisibility(
-                View.VISIBLE
-        );
+        refreshHomeAccount();
     }
 
+    private void refreshHomeAccount() {
+
+        if (mAccountSpinner == null) {
+            return;
+        }
+
+        String currentProfile =
+                PojavProfile.getCurrentProfileName(this);
+
+        if (currentProfile == null || currentProfile.isEmpty()) {
+            return;
+        }
+
+        MinecraftAccount account =
+                PojavProfile.getCurrentProfileContent(
+                        this,
+                        currentProfile
+                );
+
+        if (account == null) {
+            return;
+        }
+
+        /*
+         * Atualiza o cabeçalho da Home imediatamente.
+         */
+        mUserNickname.setText(account.username);
+
+        loadMinecraftAvatar(account.username);
+    }
 
     // =========================================================
     // Loading / social
@@ -982,7 +998,9 @@ public class LauncherActivity extends BaseActivity {
     // =========================================================
     // Inicialização interna
     // =========================================================
-
+    public void refreshAccountSelection() {
+        mAccountSpinner.reloadAccountSelection();
+    }
     private void setupLauncherInfrastructure() {
 
         IconCacheJanitor.runJanitor();
@@ -1532,9 +1550,7 @@ public class LauncherActivity extends BaseActivity {
     public void onBackPressed() {
 
         if (isSettingsOpen()) {
-
             showHome();
-
             return;
         }
 
@@ -1547,4 +1563,5 @@ public class LauncherActivity extends BaseActivity {
 
         LauncherPreferences.computeNotchSize(this);
     }
+
 }

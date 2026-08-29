@@ -106,7 +106,9 @@ public class MicrosoftLoginFragment extends Fragment {
                 // Should be captured by the activity to kill the fragment and get
                 ExtraCore.setValue(ExtraConstants.MICROSOFT_LOGIN_TODO, Uri.parse(url));
                 Toast.makeText(view.getContext(), "Login started !", Toast.LENGTH_SHORT).show();
-                Tools.backToMainMenu(requireActivity());
+                requireActivity()
+                        .getSupportFragmentManager()
+                        .popBackStack();
 
                 return true;
             }

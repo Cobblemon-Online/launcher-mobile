@@ -14,18 +14,13 @@ import net.kdt.pojavlaunch.extra.ExtraConstants;
 import net.kdt.pojavlaunch.extra.ExtraCore;
 import net.kdt.pojavlaunch.settings.fragments.AboutSettingsFragment;
 import net.kdt.pojavlaunch.settings.fragments.AccountSettingsFragment;
-import net.kdt.pojavlaunch.settings.fragments.JavaSettingsFragment;
 import net.kdt.pojavlaunch.settings.fragments.LauncherSettingsFragment;
-import net.kdt.pojavlaunch.settings.fragments.MinecraftSettingsFragment;
+import net.kdt.pojavlaunch.settings.fragments.ModpackSettingsFragment;
 
 public class SettingsRootFragment extends Fragment {
 
-    private TextView mTitle;
-    private TextView mSubtitle;
-
     private TextView mAccountTab;
-    private TextView mMinecraftTab;
-    private TextView mJavaTab;
+    private TextView mModpackTab;
     private TextView mLauncherTab;
     private TextView mAboutTab;
 
@@ -50,20 +45,12 @@ public class SettingsRootFragment extends Fragment {
 
     private void bindViews(View view) {
 
-        mTitle =
-                view.findViewById(R.id.settings_title);
-
-        mSubtitle =
-                view.findViewById(R.id.settings_subtitle);
-
         mAccountTab =
                 view.findViewById(R.id.settings_tab_account);
 
-        mMinecraftTab =
-                view.findViewById(R.id.settings_tab_minecraft);
+        mModpackTab =
+                view.findViewById(R.id.settings_tab_modpack);
 
-        mJavaTab =
-                view.findViewById(R.id.settings_tab_java);
 
         mLauncherTab =
                 view.findViewById(R.id.settings_tab_launcher);
@@ -78,12 +65,8 @@ public class SettingsRootFragment extends Fragment {
                 view -> selectTab(SettingsTab.ACCOUNT)
         );
 
-        mMinecraftTab.setOnClickListener(
-                view -> selectTab(SettingsTab.MINECRAFT)
-        );
-
-        mJavaTab.setOnClickListener(
-                view -> selectTab(SettingsTab.JAVA)
+        mModpackTab.setOnClickListener(
+                view -> selectTab(SettingsTab.MODPACK)
         );
 
         mLauncherTab.setOnClickListener(
@@ -112,7 +95,6 @@ public class SettingsRootFragment extends Fragment {
 
         mSelectedTab = tab;
 
-        updateHeader(tab);
         updateSidebar(tab);
 
         getChildFragmentManager()
@@ -124,17 +106,10 @@ public class SettingsRootFragment extends Fragment {
                 .commit();
     }
 
-    private void updateHeader(SettingsTab tab) {
-
-        mTitle.setText(tab.getTitle());
-        mSubtitle.setText(tab.getSubtitle());
-    }
-
     private void updateSidebar(SettingsTab selected) {
 
         resetTab(mAccountTab);
-        resetTab(mMinecraftTab);
-        resetTab(mJavaTab);
+        resetTab(mModpackTab);
         resetTab(mLauncherTab);
         resetTab(mAboutTab);
 
@@ -143,19 +118,13 @@ public class SettingsRootFragment extends Fragment {
 
         selectedView.setTextColor(Color.WHITE);
 
-        selectedView.setBackgroundColor(
-                Color.parseColor("#1C1C1C")
-        );
+        selectedView.setTextColor(Color.WHITE);
     }
 
     private void resetTab(TextView view) {
 
         view.setTextColor(
                 Color.parseColor("#747474")
-        );
-
-        view.setBackgroundColor(
-                Color.TRANSPARENT
         );
     }
 
@@ -166,11 +135,8 @@ public class SettingsRootFragment extends Fragment {
             case ACCOUNT:
                 return mAccountTab;
 
-            case MINECRAFT:
-                return mMinecraftTab;
-
-            case JAVA:
-                return mJavaTab;
+            case MODPACK:
+                return mModpackTab;
 
             case LAUNCHER:
                 return mLauncherTab;
@@ -188,11 +154,8 @@ public class SettingsRootFragment extends Fragment {
             case ACCOUNT:
                 return new AccountSettingsFragment();
 
-            case MINECRAFT:
-                return new MinecraftSettingsFragment();
-
-            case JAVA:
-                return new JavaSettingsFragment();
+            case MODPACK:
+                return new ModpackSettingsFragment();
 
             case LAUNCHER:
                 return new LauncherSettingsFragment();

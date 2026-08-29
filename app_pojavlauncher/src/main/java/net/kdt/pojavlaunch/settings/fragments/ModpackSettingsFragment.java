@@ -4,9 +4,9 @@ import androidx.fragment.app.Fragment;
 
 import net.kdt.pojavlaunch.R;
 
-public class MinecraftSettingsFragment extends Fragment {
+public class ModpackSettingsFragment extends Fragment {
 
-    public MinecraftSettingsFragment() {
+    public ModpackSettingsFragment() {
         super(R.layout.fragment_settings_placeholder);
     }
 }
