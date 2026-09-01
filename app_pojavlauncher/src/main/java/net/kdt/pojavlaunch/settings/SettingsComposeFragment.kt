@@ -8,6 +8,8 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
 import net.kdt.pojavlaunch.LauncherActivity
+import net.kdt.pojavlaunch.Tools
+import net.kdt.pojavlaunch.fragments.MicrosoftLoginFragment
 
 class SettingsComposeFragment : Fragment() {
 
@@ -23,10 +25,21 @@ class SettingsComposeFragment : Fragment() {
             )
 
             setContent {
+
                 SettingsScreen(
                     onBack = {
                         (requireActivity() as LauncherActivity)
                             .showHomeFromSettings()
+                    },
+
+                    onAddMicrosoftAccount = {
+
+                        Tools.swapFragment(
+                            requireActivity(),
+                            MicrosoftLoginFragment::class.java,
+                            MicrosoftLoginFragment.TAG,
+                            null
+                        )
                     }
                 )
             }

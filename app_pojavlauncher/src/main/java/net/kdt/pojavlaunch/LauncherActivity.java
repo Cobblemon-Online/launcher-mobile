@@ -15,20 +15,12 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
-import net.kdt.pojavlaunch.settings.SettingsComposeFragment;
-import net.kdt.pojavlaunch.value.MinecraftAccount;
-import net.kdt.pojavlaunch.views.CenterCropVideoView;
-import android.graphics.drawable.Drawable;
-
-import pl.droidsonroids.gif.GifDrawable;
-import pl.droidsonroids.gif.GifImageView;
-
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-import androidx.fragment.app.FragmentContainerView;
+import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewTreeLifecycleOwner;
 import androidx.lifecycle.ViewTreeViewModelStoreOwner;
 import androidx.savedstate.ViewTreeSavedStateRegistryOwner;
@@ -51,6 +43,7 @@ import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
 import net.kdt.pojavlaunch.progresskeeper.TaskCountListener;
 import net.kdt.pojavlaunch.services.ProgressServiceKeeper;
+import net.kdt.pojavlaunch.settings.SettingsComposeFragment;
 import net.kdt.pojavlaunch.tasks.AsyncMinecraftDownloader;
 import net.kdt.pojavlaunch.tasks.AsyncVersionList;
 import net.kdt.pojavlaunch.tasks.MinecraftDownloader;
@@ -58,6 +51,7 @@ import net.kdt.pojavlaunch.utils.DateUtils;
 import net.kdt.pojavlaunch.utils.NotificationUtils;
 import net.kdt.pojavlaunch.value.launcherprofiles.LauncherProfiles;
 import net.kdt.pojavlaunch.value.launcherprofiles.MinecraftProfile;
+import net.kdt.pojavlaunch.views.CenterCropVideoView;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -67,120 +61,86 @@ import java.lang.ref.WeakReference;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
-
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.BitmapDrawable;
-import android.widget.ImageView;
-import android.widget.TextView;
-
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.Map;
 
 public class LauncherActivity extends BaseActivity {
 
-    private void setupPixelGifs() {
-        GifImageView pokeballs =
-                findViewById(R.id.play_button_pokeballs);
-
-        Drawable drawable = pokeballs.getDrawable();
-
-        if (drawable instanceof GifDrawable) {
-            ((GifDrawable) drawable).setFilterBitmap(false);
-        }
-    }
-
-    private void setupSocialButtons() {
-        findViewById(R.id.social_button_1).setOnClickListener(v ->
-                openSocialLink(R.string.social_instagram_url));
-
-        findViewById(R.id.social_button_2).setOnClickListener(v ->
-                openSocialLink(R.string.social_discord_url));
-
-        findViewById(R.id.social_button_3).setOnClickListener(v ->
-                openSocialLink(R.string.social_tiktok_url));
-
-        findViewById(R.id.social_button_4).setOnClickListener(v ->
-                openSocialLink(R.string.social_x_url));
-
-        findViewById(R.id.social_button_5).setOnClickListener(v ->
-                openSocialLink(R.string.social_youtube_url));
-    }
-
-    private void openSocialLink(int urlResource) {
-        String url = getString(urlResource);
-
-        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-
-        try {
-            startActivity(intent);
-        } catch (Exception e) {
-            Log.e("LAUNCHER_UI", "Não foi possível abrir o link: " + url, e);
-        }
-    }
-
-    public static final String SETTING_FRAGMENT_TAG = "SETTINGS_FRAGMENT";
-
     // =========================================================
-    // Launchers usados internamente pelo Pojav
+    // Fragment tags
     // =========================================================
 
+    private static final String HOME_COMPOSE_TAG =
+            "HOME_COMPOSE";
+
+    private static final String SETTINGS_COMPOSE_TAG =
+            "SETTINGS_COMPOSE";
+
+
+    /*
+     * Mantido por compatibilidade caso alguma parte antiga
+     * do Pojav ainda referencie essa constante.
+     */
+    public static final String SETTING_FRAGMENT_TAG =
+            "SETTINGS_FRAGMENT";
+
+
+    // =========================================================
+    // Mod installer
+    // =========================================================
 
     public final ActivityResultLauncher<Object> modInstallerLauncher =
             registerForActivityResult(
                     new OpenDocumentWithExtension("jar"),
                     data -> {
                         if (data != null) {
-                            Tools.launchModInstaller(this, data);
+                            Tools.launchModInstaller(
+                                    this,
+                                    data
+                            );
                         }
                     }
             );
 
 
+    // =========================================================
+    // Modpack gerenciado
+    // =========================================================
+
     private static final String BUNDLED_MRPACK_ASSET =
             "cobblemon_online.mrpack";
 
     private volatile boolean mManagedPackReady = false;
+
     private volatile boolean mManagedPackPreparing = false;
 
 
     // =========================================================
-    // Views
+    // Estado visual do launcher
+    // =========================================================
+
+    private boolean mLauncherLoading = false;
+
+
+    // =========================================================
+    // Views legadas que continuam existindo
     // =========================================================
 
     private CenterCropVideoView mBackgroundVideo;
 
-    private View mHomeContent;
-
-    private FragmentContainerView mSettingsContainer;
-
-    private View mPlayButton;
-
-    private View mSettingsButton;
-
-    private View mSocialBar;
-
-    private View mLoadingBar;
-
-
-    // =========================================================
-    // Componentes internos do launcher
-    // =========================================================
-
     private mcAccountSpinner mAccountSpinner;
 
     private ProgressLayout mProgressLayout;
+
+
+    // =========================================================
+    // Infraestrutura interna
+    // =========================================================
 
     private ProgressServiceKeeper mProgressServiceKeeper;
 
     private ModloaderInstallTracker mInstallTracker;
 
     private NotificationManager mNotificationManager;
-
-    private View mUserHeader;
-    private TextView mUserNickname;
-    private ImageView mUserAvatar;
 
 
     // =========================================================
@@ -216,7 +176,7 @@ public class LauncherActivity extends BaseActivity {
 
 
     // =========================================================
-    // Compatibilidade com o evento antigo LAUNCH_GAME
+    // Compatibilidade com LAUNCH_GAME antigo
     // =========================================================
 
     private final ExtraListener<Boolean> mLaunchGameListener =
@@ -229,7 +189,7 @@ public class LauncherActivity extends BaseActivity {
 
 
     // =========================================================
-    // Atualiza a UI quando existem tarefas
+    // Atualiza Compose quando existem tarefas
     // =========================================================
 
     private final TaskCountListener mTaskCountListener =
@@ -237,16 +197,21 @@ public class LauncherActivity extends BaseActivity {
 
                 Tools.runOnUiThread(() -> {
 
-                    boolean loading = taskCount > 0;
+                    boolean loading =
+                            taskCount > 0;
 
-                    setLoading(loading);
+                    setLoading(
+                            loading
+                    );
 
                     if (
                             loading
                                     && mNotificationManager != null
                     ) {
+
                         mNotificationManager.cancel(
-                                NotificationUtils.NOTIFICATION_ID_GAME_START
+                                NotificationUtils
+                                        .NOTIFICATION_ID_GAME_START
                         );
                     }
                 });
@@ -259,9 +224,11 @@ public class LauncherActivity extends BaseActivity {
 
     @Override
     protected boolean shouldIgnoreNotch() {
+
         return getResources()
                 .getConfiguration()
-                .orientation == ORIENTATION_PORTRAIT;
+                .orientation
+                == ORIENTATION_PORTRAIT;
     }
 
 
@@ -270,29 +237,67 @@ public class LauncherActivity extends BaseActivity {
         return false;
     }
 
+    public void deleteAccountFromCompose(
+            String username
+    ) {
+        mAccountSpinner.removeAccount(username);
+    }
 
     // =========================================================
     // onCreate
     // =========================================================
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    protected void onCreate(
+            Bundle savedInstanceState
+    ) {
 
-        View decorView = getWindow().getDecorView();
+        super.onCreate(
+                savedInstanceState
+        );
+        Log.d(
+                "RENDER_TEST",
+                "Hardware accelerated: "
+                        + getWindow()
+                        .getDecorView()
+                        .isHardwareAccelerated()
+        );
 
-        ViewTreeLifecycleOwner.set(decorView, this);
-        ViewTreeViewModelStoreOwner.set(decorView, this);
-        ViewTreeSavedStateRegistryOwner.set(decorView, this);
+        /*
+         * Necessário porque essa Activity/BaseActivity antiga
+         * não estava instalando automaticamente os ViewTree owners
+         * esperados pelo Compose.
+         */
+        View decorView =
+                getWindow()
+                        .getDecorView();
+
+        ViewTreeLifecycleOwner.set(
+                decorView,
+                this
+        );
+
+        ViewTreeViewModelStoreOwner.set(
+                decorView,
+                this
+        );
+
+        ViewTreeSavedStateRegistryOwner.set(
+                decorView,
+                this
+        );
+
 
         Log.d(
                 "LAUNCHER_UI",
-                "Abrindo nova tela principal"
+                "Abrindo launcher Compose"
         );
+
 
         setContentView(
                 R.layout.activity_pojav_launcher
         );
+
 
         bindViews();
 
@@ -300,59 +305,636 @@ public class LauncherActivity extends BaseActivity {
 
         setupPermissions();
 
-        setupButtons();
-
-        setupSocialButtons();
-
-        setupPixelGifs();
-
         setupLauncherInfrastructure();
 
-        prepareBundledModpack();
 
-        mAccountSpinner.post(this::setupUserHeader);
+        /*
+         * FragmentManager restaura sozinho o Fragment atual
+         * após recriação da Activity.
+         *
+         * Só criamos a Home na primeira abertura.
+         */
+        if (savedInstanceState == null) {
+
+            showHome();
+        }
+
+
+        prepareBundledModpack();
     }
 
-    private void setupSettingsCompose() {
+
+    // =========================================================
+    // Views legadas
+    // =========================================================
+
+    private void bindViews() {
+
+        mBackgroundVideo =
+                findViewById(
+                        R.id.background_video
+                );
+
+        mAccountSpinner =
+                findViewById(
+                        R.id.account_spinner
+                );
+
+        mProgressLayout =
+                findViewById(
+                        R.id.progress_layout
+                );
+    }
+
+
+    // =========================================================
+    // Bridges para Compose
+    // =========================================================
+
+    public void launchGameFromCompose() {
+        launchGame();
+    }
+
+
+    public void showSettingsFromCompose() {
+        showSettings();
+    }
+
+
+    public void showHomeFromSettings() {
+        showHome();
+    }
+
+
+    public void openSocialLinkFromCompose(
+            int urlResource
+    ) {
+
+        openSocialLink(
+                urlResource
+        );
+    }
+
+
+    public boolean isLauncherLoading() {
+        return mLauncherLoading;
+    }
+
+
+    // =========================================================
+    // Redes sociais
+    // =========================================================
+
+    private void openSocialLink(
+            int urlResource
+    ) {
+
+        String url =
+                getString(
+                        urlResource
+                );
+
+        Intent intent =
+                new Intent(
+                        Intent.ACTION_VIEW,
+                        Uri.parse(url)
+                );
+
+        try {
+
+            startActivity(
+                    intent
+            );
+
+        } catch (Exception e) {
+
+            Log.e(
+                    "LAUNCHER_UI",
+                    "Não foi possível abrir o link: "
+                            + url,
+                    e
+            );
+        }
+    }
+
+
+    // =========================================================
+    // Navegação Compose
+    // =========================================================
+
+    private void showHome() {
+
+        /*
+         * Se a Home já estiver aberta, não recria.
+         */
+        Fragment currentFragment =
+                getSupportFragmentManager()
+                        .findFragmentById(
+                                R.id.container_fragment
+                        );
 
         if (
+                currentFragment
+                        instanceof LauncherHomeComposeFragment
+        ) {
+
+            resumeBackgroundVideo();
+
+            return;
+        }
+
+
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(
+                        R.id.container_fragment,
+                        new LauncherHomeComposeFragment(),
+                        HOME_COMPOSE_TAG
+                )
+                .commit();
+
+
+        resumeBackgroundVideo();
+    }
+
+
+    private void showSettings() {
+
+        Fragment currentFragment =
                 getSupportFragmentManager()
-                        .findFragmentByTag("SETTINGS_COMPOSE") != null
+                        .findFragmentById(
+                                R.id.container_fragment
+                        );
+
+        if (
+                currentFragment
+                        instanceof SettingsComposeFragment
         ) {
             return;
         }
+
+
+        pauseBackgroundVideo();
+
 
         getSupportFragmentManager()
                 .beginTransaction()
                 .replace(
                         R.id.container_fragment,
                         new SettingsComposeFragment(),
-                        "SETTINGS_COMPOSE"
+                        SETTINGS_COMPOSE_TAG
                 )
                 .commit();
     }
 
-    public void showHomeFromSettings() {
-        showHome();
+
+    private boolean isSettingsOpen() {
+
+        Fragment fragment =
+                getSupportFragmentManager()
+                        .findFragmentById(
+                                R.id.container_fragment
+                        );
+
+        return fragment
+                instanceof SettingsComposeFragment;
     }
 
+
     // =========================================================
-    // Views
+    // Vídeo
     // =========================================================
+
+    private void setupBackgroundVideo() {
+
+        Uri videoUri =
+                Uri.parse(
+                        "android.resource://"
+                                + getPackageName()
+                                + "/"
+                                + R.raw.launcher_background
+                );
+
+
+        mBackgroundVideo.setVideoURI(
+                videoUri
+        );
+
+
+        mBackgroundVideo.setOnPreparedListener(
+                mediaPlayer -> {
+
+                    mediaPlayer.setLooping(
+                            true
+                    );
+
+                    mediaPlayer.setVolume(
+                            0f,
+                            0f
+                    );
+
+
+                    mBackgroundVideo.setVideoSize(
+                            mediaPlayer.getVideoWidth(),
+                            mediaPlayer.getVideoHeight()
+                    );
+
+
+                    /*
+                     * Importante:
+                     *
+                     * Se o usuário já tiver aberto Settings
+                     * enquanto o vídeo carregava, não deixa
+                     * onPrepared() religar o vídeo atrás dela.
+                     */
+                    if (!isSettingsOpen()) {
+
+                        mBackgroundVideo.start();
+                    }
+                }
+        );
+    }
+
+
+    private void pauseBackgroundVideo() {
+
+        if (
+                mBackgroundVideo != null
+                        && mBackgroundVideo.isPlaying()
+        ) {
+
+            mBackgroundVideo.pause();
+        }
+    }
+
+
+    private void resumeBackgroundVideo() {
+
+        if (
+                mBackgroundVideo != null
+                        && !mBackgroundVideo.isPlaying()
+                        && !isSettingsOpen()
+        ) {
+
+            mBackgroundVideo.start();
+        }
+    }
+
+
+    // =========================================================
+    // Loading Compose
+    // =========================================================
+
+    private void setLoading(
+            boolean loading
+    ) {
+
+        mLauncherLoading =
+                loading;
+
+
+        Fragment fragment =
+                getSupportFragmentManager()
+                        .findFragmentById(
+                                R.id.container_fragment
+                        );
+
+
+        if (
+                fragment
+                        instanceof LauncherHomeComposeFragment
+        ) {
+
+            LauncherHomeComposeFragment homeFragment =
+                    (LauncherHomeComposeFragment)
+                            fragment;
+
+            homeFragment.setLoadingState(
+                    loading
+            );
+        }
+    }
+
+
+    // =========================================================
+    // Conta
+    // =========================================================
+
+    public void refreshAccountSelection() {
+
+        if (mAccountSpinner != null) {
+
+            mAccountSpinner
+                    .reloadAccountSelection();
+        }
+
+
+        /*
+         * Se a Home estiver visível, manda ela reler
+         * a conta atual.
+         */
+        Fragment fragment =
+                getSupportFragmentManager()
+                        .findFragmentById(
+                                R.id.container_fragment
+                        );
+
+
+        if (
+                fragment
+                        instanceof LauncherHomeComposeFragment
+        ) {
+
+            LauncherHomeComposeFragment homeFragment =
+                    (LauncherHomeComposeFragment)
+                            fragment;
+
+            homeFragment.refreshAccount();
+        }
+    }
+
+
+    // =========================================================
+    // Modpack
+    // =========================================================
+
+    public void installBundledModpack() {
+        prepareBundledModpack();
+    }
+
+
+    private void prepareBundledModpack() {
+
+        if (mManagedPackPreparing) {
+            return;
+        }
+
+
+        mManagedPackPreparing =
+                true;
+
+
+        setLoading(
+                true
+        );
+
+
+        PojavApplication
+                .sExecutorService
+                .execute(() -> {
+
+                    File modpackFile =
+                            null;
+
+                    try {
+
+                        // =========================================
+                        // 1. Hash do MRPACK embutido
+                        // =========================================
+
+                        String expectedHash =
+                                calculateBundledMrpackSha1();
+
+
+                        Log.d(
+                                "COBBLEMON_PACK",
+                                "MRPACK embutido SHA-1: "
+                                        + expectedHash
+                        );
+
+
+                        // =========================================
+                        // 2. Carrega launcher_profiles
+                        // =========================================
+
+                        LauncherProfiles.load();
+
+
+                        // =========================================
+                        // 3. Verifica instalação existente
+                        // =========================================
+
+                        String profileKey =
+                                findBundledModpackProfile(
+                                        expectedHash
+                                );
+
+
+                        // =========================================
+                        // 4. Importa caso ainda não exista
+                        // =========================================
+
+                        if (profileKey == null) {
+
+                            Log.d(
+                                    "COBBLEMON_PACK",
+                                    "Pack ainda não instalado. Importando..."
+                            );
+
+
+                            modpackFile =
+                                    copyBundledMrpackToCache();
+
+
+                            CommonApi commonApi =
+                                    new CommonApi(
+                                            getString(
+                                                    R.string
+                                                            .curseforge_api_key
+                                            )
+                                    );
+
+
+                            Uri modpackUri =
+                                    Uri.fromFile(
+                                            modpackFile
+                                    );
+
+
+                            ModLoader loaderInfo =
+                                    commonApi.importModpack(
+                                            LauncherActivity.this,
+                                            modpackUri
+                                    );
+
+
+                            if (loaderInfo == null) {
+
+                                throw new IOException(
+                                        "O MRPACK não retornou um ModLoader válido"
+                                );
+                            }
+
+
+                            loaderInfo
+                                    .getDownloadTask(
+                                            new NotificationDownloadListener(
+                                                    this,
+                                                    loaderInfo
+                                            )
+                                    )
+                                    .run();
+
+
+                            String loaderVersionId =
+                                    loaderInfo.getVersionId();
+
+
+                            File loaderVersionJson =
+                                    new File(
+                                            Tools.DIR_HOME_VERSION,
+                                            loaderVersionId
+                                                    + "/"
+                                                    + loaderVersionId
+                                                    + ".json"
+                                    );
+
+
+                            if (
+                                    !loaderVersionJson
+                                            .isFile()
+                            ) {
+
+                                throw new IOException(
+                                        "Fabric não foi instalado corretamente: "
+                                                + loaderVersionId
+                                );
+                            }
+
+
+                            /*
+                             * O importador alterou launcher_profiles.
+                             * Recarrega para pegar o estado atualizado.
+                             */
+                            LauncherProfiles.load();
+
+
+                            profileKey =
+                                    findBundledModpackProfile(
+                                            expectedHash
+                                    );
+
+
+                            if (profileKey == null) {
+
+                                throw new IOException(
+                                        "O pack foi importado, mas o profile não foi encontrado"
+                                );
+                            }
+                        }
+
+
+                        // =========================================
+                        // 5. Seleciona o profile
+                        // =========================================
+
+                        selectManagedProfile(
+                                profileKey
+                        );
+
+
+                        mManagedPackReady =
+                                true;
+
+
+                        Log.d(
+                                "COBBLEMON_PACK",
+                                "Cobblemon Online pronto para jogar"
+                        );
+
+
+                    } catch (
+                            IOException
+                            | NoSuchAlgorithmException e
+                    ) {
+
+                        mManagedPackReady =
+                                false;
+
+
+                        Log.e(
+                                "COBBLEMON_PACK",
+                                "Falha preparando Cobblemon Online",
+                                e
+                        );
+
+
+                        Tools.showErrorRemote(
+                                this,
+                                R.string
+                                        .modpack_install_download_failed,
+                                e
+                        );
+
+
+                    } catch (
+                            IllegalArgumentException e
+                    ) {
+
+                        mManagedPackReady =
+                                false;
+
+
+                        Log.e(
+                                "COBBLEMON_PACK",
+                                "MRPACK inválido",
+                                e
+                        );
+
+
+                        Tools.showError(
+                                this,
+                                R.string.not_modpack_file,
+                                e
+                        );
+
+
+                    } finally {
+
+                        if (
+                                modpackFile != null
+                                        && modpackFile.exists()
+                        ) {
+
+                            //noinspection ResultOfMethodCallIgnored
+                            modpackFile.delete();
+                        }
+
+
+                        mManagedPackPreparing =
+                                false;
+
+
+                        runOnUiThread(
+                                () ->
+                                        setLoading(
+                                                false
+                                        )
+                        );
+                    }
+                });
+    }
+
+
     private String findBundledModpackProfile(
             String expectedHash
     ) {
 
         if (
                 LauncherProfiles.mainProfileJson == null
-                        || LauncherProfiles.mainProfileJson.profiles == null
+                        || LauncherProfiles
+                        .mainProfileJson
+                        .profiles == null
         ) {
+
             return null;
         }
 
+
         for (
                 Map.Entry<String, MinecraftProfile> entry :
-                LauncherProfiles.mainProfileJson
+                LauncherProfiles
+                        .mainProfileJson
                         .profiles
                         .entrySet()
         ) {
@@ -360,26 +942,32 @@ public class LauncherActivity extends BaseActivity {
             MinecraftProfile profile =
                     entry.getValue();
 
+
             if (
                     profile == null
                             || profile.gameDir == null
                             || profile.lastVersionId == null
             ) {
+
                 continue;
             }
+
 
             if (
                     !profile.gameDir.endsWith(
                             expectedHash
                     )
             ) {
+
                 continue;
             }
+
 
             String relativeGameDir =
                     profile.gameDir.startsWith("./")
                             ? profile.gameDir.substring(2)
                             : profile.gameDir;
+
 
             File instanceDirectory =
                     new File(
@@ -387,269 +975,29 @@ public class LauncherActivity extends BaseActivity {
                             relativeGameDir
                     );
 
-            if (!instanceDirectory.isDirectory()) {
+
+            if (
+                    !instanceDirectory.isDirectory()
+            ) {
+
                 continue;
             }
+
 
             return entry.getKey();
         }
 
+
         return null;
     }
 
-    private void bindViews() {
-
-        mBackgroundVideo =
-                findViewById(R.id.background_video);
-
-        mHomeContent =
-                findViewById(R.id.home_content);
-
-        mSettingsContainer =
-                findViewById(R.id.container_fragment);
-
-        mPlayButton =
-                findViewById(R.id.play_button);
-
-        mSettingsButton =
-                findViewById(R.id.setting_button);
-
-        mSocialBar =
-                findViewById(R.id.social_bar);
-
-        mLoadingBar =
-                findViewById(R.id.loading_bar);
-
-
-        // continuam existindo, mas invisíveis
-
-        mAccountSpinner =
-                findViewById(R.id.account_spinner);
-
-        mProgressLayout =
-                findViewById(R.id.progress_layout);
-
-        mUserHeader =
-                findViewById(R.id.user_header);
-
-        mUserNickname =
-                findViewById(R.id.user_nickname);
-
-        mUserAvatar =
-                findViewById(R.id.user_avatar);
-    }
-    public void installBundledModpack() {
-        prepareBundledModpack();
-    }
-    private void prepareBundledModpack() {
-
-        if (mManagedPackPreparing) {
-            return;
-        }
-
-        mManagedPackPreparing = true;
-
-        setLoading(true);
-
-        PojavApplication.sExecutorService.execute(() -> {
-
-            File modpackFile = null;
-
-            try {
-
-                // =================================================
-                // 1. Descobre exatamente qual pack está no APK
-                // =================================================
-
-                String expectedHash =
-                        calculateBundledMrpackSha1();
-
-                Log.d(
-                        "COBBLEMON_PACK",
-                        "MRPACK embutido SHA-1: "
-                                + expectedHash
-                );
-
-
-                // =================================================
-                // 2. Carrega profiles do Pojav
-                // =================================================
-
-                LauncherProfiles.load();
-
-
-                // =================================================
-                // 3. Verifica se ESTE mrpack já foi instalado
-                // =================================================
-
-                String profileKey =
-                        findBundledModpackProfile(
-                                expectedHash
-                        );
-
-
-                // =================================================
-                // 4. Não instalado -> usa importador do Amethyst
-                // =================================================
-
-                if (profileKey == null) {
-
-                    Log.d(
-                            "COBBLEMON_PACK",
-                            "Pack ainda não instalado. Importando..."
-                    );
-
-                    modpackFile =
-                            copyBundledMrpackToCache();
-
-                    CommonApi commonApi =
-                            new CommonApi(
-                                    getString(
-                                            R.string.curseforge_api_key
-                                    )
-                            );
-
-
-                    // MESMO importador usado pelo Amethyst
-                    Uri modpackUri =
-                            Uri.fromFile(modpackFile);
-
-                    ModLoader loaderInfo =
-                            commonApi.importModpack(
-                                    LauncherActivity.this,
-                                    modpackUri
-                            );
-
-                    if (loaderInfo == null) {
-                        throw new IOException(
-                                "O MRPACK não retornou um ModLoader válido"
-                        );
-                    }
-
-
-                    // MESMO pipeline de instalação do loader
-                    loaderInfo
-                            .getDownloadTask(
-                                    new NotificationDownloadListener(
-                                            this,
-                                            loaderInfo
-                                    )
-                            )
-                            .run();
-
-                    String loaderVersionId =
-                            loaderInfo.getVersionId();
-
-                    File loaderVersionJson =
-                            new File(
-                                    Tools.DIR_HOME_VERSION,
-                                    loaderVersionId
-                                            + "/"
-                                            + loaderVersionId
-                                            + ".json"
-                            );
-
-                    if (!loaderVersionJson.isFile()) {
-                        throw new IOException(
-                                "Fabric não foi instalado corretamente: "
-                                        + loaderVersionId
-                        );
-                    }
-                    // O importador escreveu launcher_profiles.json.
-                    // Recarrega para pegar inclusive a normalização UUID.
-                    LauncherProfiles.load();
-
-
-                    profileKey =
-                            findBundledModpackProfile(
-                                    expectedHash
-                            );
-
-                    if (profileKey == null) {
-
-                        throw new IOException(
-                                "O pack foi importado, mas o profile não foi encontrado"
-                        );
-                    }
-                }
-
-
-                // =================================================
-                // 5. Seleciona automaticamente
-                // =================================================
-
-                selectManagedProfile(
-                        profileKey
-                );
-
-                mManagedPackReady = true;
-
-                Log.d(
-                        "COBBLEMON_PACK",
-                        "Cobblemon Online pronto para jogar"
-                );
-
-
-            } catch (
-                    IOException
-                    | NoSuchAlgorithmException e
-            ) {
-
-                mManagedPackReady = false;
-
-                Log.e(
-                        "COBBLEMON_PACK",
-                        "Falha preparando Cobblemon Online",
-                        e
-                );
-
-                Tools.showErrorRemote(
-                        this,
-                        R.string.modpack_install_download_failed,
-                        e
-                );
-
-
-            } catch (IllegalArgumentException e) {
-
-                mManagedPackReady = false;
-
-                Log.e(
-                        "COBBLEMON_PACK",
-                        "MRPACK inválido",
-                        e
-                );
-
-                Tools.showError(
-                        this,
-                        R.string.not_modpack_file,
-                        e
-                );
-
-
-            } finally {
-
-                if (
-                        modpackFile != null
-                                && modpackFile.exists()
-                ) {
-                    modpackFile.delete();
-                }
-
-                mManagedPackPreparing = false;
-
-                runOnUiThread(() ->
-                        setLoading(false)
-                );
-            }
-        });
-    }
 
     private void selectManagedProfile(
             String profileKey
     ) {
 
-        LauncherPreferences.DEFAULT_PREF
+        LauncherPreferences
+                .DEFAULT_PREF
                 .edit()
                 .putString(
                         LauncherPreferences
@@ -658,10 +1006,15 @@ public class LauncherActivity extends BaseActivity {
                 )
                 .apply();
 
+
         MinecraftProfile profile =
-                LauncherProfiles.mainProfileJson
+                LauncherProfiles
+                        .mainProfileJson
                         .profiles
-                        .get(profileKey);
+                        .get(
+                                profileKey
+                        );
+
 
         Log.d(
                 "COBBLEMON_PACK",
@@ -676,21 +1029,29 @@ public class LauncherActivity extends BaseActivity {
         );
     }
 
+
     private File copyBundledMrpackToCache()
             throws IOException {
 
         File cacheDirectory =
                 Tools.DIR_CACHE;
 
-        if (!cacheDirectory.exists()) {
+
+        if (
+                !cacheDirectory.exists()
+        ) {
+
+            //noinspection ResultOfMethodCallIgnored
             cacheDirectory.mkdirs();
         }
+
 
         File destination =
                 new File(
                         cacheDirectory,
                         "cobblemon_online_import.mrpack"
                 );
+
 
         try (
                 InputStream input =
@@ -699,15 +1060,22 @@ public class LauncherActivity extends BaseActivity {
                         );
 
                 FileOutputStream output =
-                        new FileOutputStream(destination)
+                        new FileOutputStream(
+                                destination
+                        )
         ) {
 
             byte[] buffer =
                     new byte[262144];
 
+
             int read;
 
-            while ((read = input.read(buffer)) != -1) {
+
+            while (
+                    (read = input.read(buffer))
+                            != -1
+            ) {
 
                 output.write(
                         buffer,
@@ -716,29 +1084,44 @@ public class LauncherActivity extends BaseActivity {
                 );
             }
 
+
             output.flush();
         }
+
 
         return destination;
     }
 
+
     private String calculateBundledMrpackSha1()
-            throws IOException, NoSuchAlgorithmException {
+            throws IOException,
+            NoSuchAlgorithmException {
 
         MessageDigest digest =
-                MessageDigest.getInstance("SHA-1");
+                MessageDigest.getInstance(
+                        "SHA-1"
+                );
+
 
         try (
                 InputStream input =
-                        getAssets().open(BUNDLED_MRPACK_ASSET)
+                        getAssets().open(
+                                BUNDLED_MRPACK_ASSET
+                        )
         ) {
 
             byte[] buffer =
                     new byte[262144];
 
+
             int read;
 
-            while ((read = input.read(buffer)) != -1) {
+
+            while (
+                    (read = input.read(buffer))
+                            != -1
+            ) {
+
                 digest.update(
                         buffer,
                         0,
@@ -747,267 +1130,51 @@ public class LauncherActivity extends BaseActivity {
             }
         }
 
+
         byte[] hash =
                 digest.digest();
 
-        StringBuilder result =
-                new StringBuilder(hash.length * 2);
 
-        for (byte b : hash) {
+        StringBuilder result =
+                new StringBuilder(
+                        hash.length * 2
+                );
+
+
+        for (
+                byte b : hash
+        ) {
+
             result.append(
-                    String.format("%02x", b)
+                    String.format(
+                            "%02x",
+                            b
+                    )
             );
         }
+
 
         return result.toString();
-    }
-
-    private void setupUserHeader() {
-
-        if (mAccountSpinner.getSelectedAccount() == null) {
-            mUserHeader.setVisibility(View.GONE);
-            return;
-        }
-
-        String username =
-                mAccountSpinner
-                        .getSelectedAccount()
-                        .username;
-
-        mUserNickname.setText(username);
-
-        loadMinecraftAvatar(username);
-    }
-
-    private void loadMinecraftAvatar(String username) {
-
-        PojavApplication.sExecutorService.execute(() -> {
-
-            HttpURLConnection connection = null;
-
-            try {
-
-                Uri avatarUri =
-                        new Uri.Builder()
-                                .scheme("https")
-                                .authority("mc-heads.net")
-                                .appendPath("head")
-                                .appendPath(username)
-                                .appendPath("left")
-                                .build();
-
-                URL url =
-                        new URL(avatarUri.toString());
-
-                connection =
-                        (HttpURLConnection)
-                                url.openConnection();
-
-                connection.setRequestMethod("GET");
-                connection.setConnectTimeout(5000);
-                connection.setReadTimeout(5000);
-
-                if (
-                        connection.getResponseCode()
-                                != HttpURLConnection.HTTP_OK
-                ) {
-                    return;
-                }
-
-                Bitmap bitmap =
-                        BitmapFactory.decodeStream(
-                                connection.getInputStream()
-                        );
-
-                if (bitmap == null) {
-                    return;
-                }
-
-                BitmapDrawable drawable =
-                        new BitmapDrawable(
-                                getResources(),
-                                bitmap
-                        );
-
-                // Mantém o visual pixelado da skin
-                drawable.setFilterBitmap(false);
-
-                runOnUiThread(() ->
-                        mUserAvatar.setImageDrawable(drawable)
-                );
-
-            } catch (Exception e) {
-
-                Log.e(
-                        "USER_AVATAR",
-                        "Erro ao carregar skin de " + username,
-                        e
-                );
-
-            } finally {
-
-                if (connection != null) {
-                    connection.disconnect();
-                }
-            }
-        });
-    }
-
-    // =========================================================
-    // Vídeo
-    // =========================================================
-
-    private void setupBackgroundVideo() {
-
-        Uri videoUri = Uri.parse(
-                "android.resource://"
-                        + getPackageName()
-                        + "/"
-                        + R.raw.launcher_background
-        );
-
-        mBackgroundVideo.setVideoURI(videoUri);
-
-        mBackgroundVideo.setOnPreparedListener(
-                mediaPlayer -> {
-
-                    mediaPlayer.setLooping(true);
-
-                    mediaPlayer.setVolume(
-                            0f,
-                            0f
-                    );
-
-                    mBackgroundVideo.setVideoSize(
-                            mediaPlayer.getVideoWidth(),
-                            mediaPlayer.getVideoHeight()
-                    );
-
-                    mBackgroundVideo.start();
-                }
-        );
-    }
-
-
-    // =========================================================
-    // Botões
-    // =========================================================
-
-    private void setupButtons() {
-
-        mPlayButton.setOnClickListener(
-                view -> launchGame()
-        );
-
-        mSettingsButton.setOnClickListener(
-                view -> showSettings()
-        );
-    }
-
-
-    // =========================================================
-    // Configurações
-    // =========================================================
-
-    private boolean isSettingsOpen() {
-
-        return mSettingsContainer.getVisibility()
-                == View.VISIBLE;
-    }
-
-
-    private void showSettings() {
-
-        mHomeContent.setVisibility(View.GONE);
-
-        mSettingsContainer.setVisibility(View.VISIBLE);
-
-        setupSettingsCompose();
-    }
-
-
-    private void showHome() {
-
-        mSettingsContainer.setVisibility(View.GONE);
-        mHomeContent.setVisibility(View.VISIBLE);
-
-        refreshHomeAccount();
-    }
-
-    private void refreshHomeAccount() {
-
-        if (mAccountSpinner == null) {
-            return;
-        }
-
-        String currentProfile =
-                PojavProfile.getCurrentProfileName(this);
-
-        if (currentProfile == null || currentProfile.isEmpty()) {
-            return;
-        }
-
-        MinecraftAccount account =
-                PojavProfile.getCurrentProfileContent(
-                        this,
-                        currentProfile
-                );
-
-        if (account == null) {
-            return;
-        }
-
-        /*
-         * Atualiza o cabeçalho da Home imediatamente.
-         */
-        mUserNickname.setText(account.username);
-
-        loadMinecraftAvatar(account.username);
-    }
-
-    // =========================================================
-    // Loading / social
-    // =========================================================
-
-    private void setLoading(boolean loading) {
-
-        if (mSocialBar == null || mLoadingBar == null) {
-            return;
-        }
-
-        mSocialBar.setVisibility(
-                loading
-                        ? View.GONE
-                        : View.VISIBLE
-        );
-
-        mLoadingBar.setVisibility(
-                loading
-                        ? View.VISIBLE
-                        : View.GONE
-        );
-
-        if (mPlayButton != null) {
-            mPlayButton.setEnabled(
-                    !loading
-            );
-        }
     }
 
 
     // =========================================================
     // Inicialização interna
     // =========================================================
-    public void refreshAccountSelection() {
-        mAccountSpinner.reloadAccountSelection();
-    }
+
     private void setupLauncherInfrastructure() {
 
         IconCacheJanitor.runJanitor();
 
-        getWindow().setBackgroundDrawable(null);
+
+        getWindow()
+                .setBackgroundDrawable(
+                        null
+                );
+
 
         checkNotificationPermission();
+
 
         mNotificationManager =
                 (NotificationManager)
@@ -1016,28 +1183,40 @@ public class LauncherActivity extends BaseActivity {
                         );
 
 
+        // =========================================
         // Progress
+        // =========================================
 
-        ProgressKeeper.addTaskCountListener(
-                mTaskCountListener
-        );
-
-        ProgressKeeper.addTaskCountListener(
-                mProgressServiceKeeper =
-                        new ProgressServiceKeeper(this)
-        );
-
-        ProgressKeeper.addTaskCountListener(
-                mProgressLayout
-        );
+        ProgressKeeper
+                .addTaskCountListener(
+                        mTaskCountListener
+                );
 
 
+        ProgressKeeper
+                .addTaskCountListener(
+                        mProgressServiceKeeper =
+                                new ProgressServiceKeeper(
+                                        this
+                                )
+                );
+
+
+        ProgressKeeper
+                .addTaskCountListener(
+                        mProgressLayout
+                );
+
+
+        // =========================================
         // Eventos
+        // =========================================
 
         ExtraCore.addExtraListener(
                 ExtraConstants.BACK_PREFERENCE,
                 mBackPreferenceListener
         );
+
 
         ExtraCore.addExtraListener(
                 ExtraConstants.LAUNCH_GAME,
@@ -1045,7 +1224,9 @@ public class LauncherActivity extends BaseActivity {
         );
 
 
+        // =========================================
         // Lista de versões
+        // =========================================
 
         new AsyncVersionList()
                 .getVersionList(
@@ -1058,13 +1239,19 @@ public class LauncherActivity extends BaseActivity {
                 );
 
 
+        // =========================================
         // Mod loaders
+        // =========================================
 
         mInstallTracker =
-                new ModloaderInstallTracker(this);
+                new ModloaderInstallTracker(
+                        this
+                );
 
 
+        // =========================================
         // Processos internos
+        // =========================================
 
         mProgressLayout.observe(
                 ProgressLayout.DOWNLOAD_MINECRAFT
@@ -1094,17 +1281,27 @@ public class LauncherActivity extends BaseActivity {
 
     private void launchGame() {
 
+        /*
+         * Modpack ainda não ficou pronto.
+         */
         if (!mManagedPackReady) {
 
             if (!mManagedPackPreparing) {
+
                 prepareBundledModpack();
             }
 
             return;
         }
 
-        // Já existe alguma tarefa rodando
-        if (mProgressLayout.hasProcesses()) {
+
+        /*
+         * Alguma tarefa já está rodando.
+         */
+        if (
+                mProgressLayout
+                        .hasProcesses()
+        ) {
 
             Toast.makeText(
                     this,
@@ -1115,20 +1312,31 @@ public class LauncherActivity extends BaseActivity {
             return;
         }
 
-        // Perfil/instância selecionada
+
+        /*
+         * Profile/instância selecionada.
+         */
         String selectedProfile =
-                LauncherPreferences.DEFAULT_PREF
+                LauncherPreferences
+                        .DEFAULT_PREF
                         .getString(
-                                LauncherPreferences.PREF_KEY_CURRENT_PROFILE,
+                                LauncherPreferences
+                                        .PREF_KEY_CURRENT_PROFILE,
                                 ""
                         );
 
 
         if (
                 LauncherProfiles.mainProfileJson == null
-                        || !LauncherProfiles.mainProfileJson
+                        || LauncherProfiles
+                        .mainProfileJson
+                        .profiles == null
+                        || !LauncherProfiles
+                        .mainProfileJson
                         .profiles
-                        .containsKey(selectedProfile)
+                        .containsKey(
+                                selectedProfile
+                        )
         ) {
 
             Toast.makeText(
@@ -1142,9 +1350,12 @@ public class LauncherActivity extends BaseActivity {
 
 
         MinecraftProfile profile =
-                LauncherProfiles.mainProfileJson
+                LauncherProfiles
+                        .mainProfileJson
                         .profiles
-                        .get(selectedProfile);
+                        .get(
+                                selectedProfile
+                        );
 
 
         if (
@@ -1165,20 +1376,31 @@ public class LauncherActivity extends BaseActivity {
         }
 
 
-        // Conta
+        /*
+         * Conta.
+         *
+         * Mantemos mcAccountSpinner internamente porque
+         * o pipeline legado ainda depende dele.
+         */
         if (
-                mAccountSpinner.getSelectedAccount()
+                mAccountSpinner
+                        .getSelectedAccount()
                         == null
         ) {
 
             Intent intent =
                     new Intent(
                             this,
-                            net.kdt.pojavlaunch.ui
-                                    .LauncherActivity.class
+                            net.kdt.pojavlaunch
+                                    .ui
+                                    .LauncherActivity
+                                    .class
                     );
 
-            startActivity(intent);
+
+            startActivity(
+                    intent
+            );
 
             finish();
 
@@ -1200,14 +1422,19 @@ public class LauncherActivity extends BaseActivity {
                         );
 
 
+        // =========================================
         // Conta demo
+        // =========================================
+
         if (
                 mAccountSpinner
                         .getSelectedAccount()
                         .isDemo()
         ) {
 
-            boolean isOlderThan13 = true;
+            boolean isOlderThan13 =
+                    true;
+
 
             if (mcVersion != null) {
 
@@ -1223,7 +1450,9 @@ public class LauncherActivity extends BaseActivity {
                                     22
                             );
 
-                } catch (ParseException ignored) {
+                } catch (
+                        ParseException ignored
+                ) {
                 }
             }
 
@@ -1236,7 +1465,8 @@ public class LauncherActivity extends BaseActivity {
                                 R.string.global_error
                         ),
                         getString(
-                                R.string.demo_versions_supported
+                                R.string
+                                        .demo_versions_supported
                         )
                 );
 
@@ -1245,11 +1475,18 @@ public class LauncherActivity extends BaseActivity {
         }
 
 
-        // Troca imediatamente a barra
-        setLoading(true);
+        /*
+         * Compose muda barra social -> loading
+         * imediatamente.
+         */
+        setLoading(
+                true
+        );
 
 
-        // Pipeline original
+        /*
+         * Pipeline original do Pojav.
+         */
         new MinecraftDownloader()
                 .start(
                         this,
@@ -1282,12 +1519,15 @@ public class LauncherActivity extends BaseActivity {
                                 return;
                             }
 
+
                             Runnable runnable =
                                     Tools.getWeakReference(
                                             mRequestNotificationPermissionRunnable
                                     );
 
+
                             if (runnable != null) {
+
                                 runnable.run();
                             }
                         }
@@ -1305,10 +1545,12 @@ public class LauncherActivity extends BaseActivity {
                                             mRequestMicrophonePermissionRunnable
                                     );
 
+
                             if (
                                     isAllowed
                                             && runnable != null
                             ) {
+
                                 runnable.run();
                             }
                         }
@@ -1323,6 +1565,7 @@ public class LauncherActivity extends BaseActivity {
                         .PREF_SKIP_NOTIFICATION_PERMISSION_CHECK
                         || checkForNotificationPermission()
         ) {
+
             return;
         }
 
@@ -1342,23 +1585,31 @@ public class LauncherActivity extends BaseActivity {
         }
 
 
-        askForNotificationPermission(null);
+        askForNotificationPermission(
+                null
+        );
     }
 
 
     private void showNotificationPermissionReasoning() {
 
-        new AlertDialog.Builder(this)
+        new AlertDialog.Builder(
+                this
+        )
                 .setTitle(
-                        R.string.notification_permission_dialog_title
+                        R.string
+                                .notification_permission_dialog_title
                 )
                 .setMessage(
-                        R.string.notification_permission_dialog_text
+                        R.string
+                                .notification_permission_dialog_text
                 )
                 .setPositiveButton(
                         android.R.string.ok,
                         (dialog, which) ->
-                                askForNotificationPermission(null)
+                                askForNotificationPermission(
+                                        null
+                                )
                 )
                 .setNegativeButton(
                         android.R.string.cancel,
@@ -1375,7 +1626,9 @@ public class LauncherActivity extends BaseActivity {
                 .PREF_SKIP_NOTIFICATION_PERMISSION_CHECK =
                 true;
 
-        LauncherPreferences.DEFAULT_PREF
+
+        LauncherPreferences
+                .DEFAULT_PREF
                 .edit()
                 .putBoolean(
                         LauncherPreferences
@@ -1383,6 +1636,7 @@ public class LauncherActivity extends BaseActivity {
                         true
                 )
                 .apply();
+
 
         Toast.makeText(
                 this,
@@ -1415,11 +1669,17 @@ public class LauncherActivity extends BaseActivity {
             Runnable onSuccessRunnable
     ) {
 
-        if (Build.VERSION.SDK_INT < 33) {
+        if (
+                Build.VERSION.SDK_INT < 33
+        ) {
+
             return;
         }
 
-        if (onSuccessRunnable != null) {
+
+        if (
+                onSuccessRunnable != null
+        ) {
 
             mRequestNotificationPermissionRunnable =
                     new WeakReference<>(
@@ -1427,9 +1687,11 @@ public class LauncherActivity extends BaseActivity {
                     );
         }
 
+
         mRequestNotificationPermissionLauncher
                 .launch(
-                        Manifest.permission.POST_NOTIFICATIONS
+                        Manifest.permission
+                                .POST_NOTIFICATIONS
                 );
     }
 
@@ -1438,7 +1700,9 @@ public class LauncherActivity extends BaseActivity {
             Runnable onSuccessRunnable
     ) {
 
-        if (onSuccessRunnable != null) {
+        if (
+                onSuccessRunnable != null
+        ) {
 
             mRequestMicrophonePermissionRunnable =
                     new WeakReference<>(
@@ -1446,9 +1710,11 @@ public class LauncherActivity extends BaseActivity {
                     );
         }
 
+
         mRequestMicrophonePermissionLauncher
                 .launch(
-                        Manifest.permission.RECORD_AUDIO
+                        Manifest.permission
+                                .RECORD_AUDIO
                 );
     }
 
@@ -1459,19 +1725,30 @@ public class LauncherActivity extends BaseActivity {
 
     @Override
     protected void onResume() {
+
         super.onResume();
 
-        ContextExecutor.setActivity(this);
 
-        if (mInstallTracker != null) {
+        ContextExecutor.setActivity(
+                this
+        );
+
+
+        if (
+                mInstallTracker != null
+        ) {
+
             mInstallTracker.attach();
         }
 
-        if (
-                mBackgroundVideo != null
-                        && !mBackgroundVideo.isPlaying()
-        ) {
-            mBackgroundVideo.start();
+
+        /*
+         * Não religa vídeo caso a Activity esteja mostrando
+         * Settings.
+         */
+        if (!isSettingsOpen()) {
+
+            resumeBackgroundVideo();
         }
     }
 
@@ -1479,18 +1756,19 @@ public class LauncherActivity extends BaseActivity {
     @Override
     protected void onPause() {
 
-        if (
-                mBackgroundVideo != null
-                        && mBackgroundVideo.isPlaying()
-        ) {
-            mBackgroundVideo.pause();
-        }
+        pauseBackgroundVideo();
+
 
         ContextExecutor.clearActivity();
 
-        if (mInstallTracker != null) {
+
+        if (
+                mInstallTracker != null
+        ) {
+
             mInstallTracker.detach();
         }
+
 
         super.onPause();
     }
@@ -1499,14 +1777,20 @@ public class LauncherActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
 
-        if (mBackgroundVideo != null) {
+        if (
+                mBackgroundVideo != null
+        ) {
+
             mBackgroundVideo.stopPlayback();
         }
 
 
-        if (mProgressLayout != null) {
+        if (
+                mProgressLayout != null
+        ) {
 
             mProgressLayout.cleanUpObservers();
+
 
             ProgressKeeper.removeTaskCountListener(
                     mProgressLayout
@@ -1514,7 +1798,9 @@ public class LauncherActivity extends BaseActivity {
         }
 
 
-        if (mProgressServiceKeeper != null) {
+        if (
+                mProgressServiceKeeper != null
+        ) {
 
             ProgressKeeper.removeTaskCountListener(
                     mProgressServiceKeeper
@@ -1531,6 +1817,7 @@ public class LauncherActivity extends BaseActivity {
                 ExtraConstants.BACK_PREFERENCE,
                 mBackPreferenceListener
         );
+
 
         ExtraCore.removeExtraListenerFromValue(
                 ExtraConstants.LAUNCH_GAME,
@@ -1549,19 +1836,31 @@ public class LauncherActivity extends BaseActivity {
     @Override
     public void onBackPressed() {
 
-        if (isSettingsOpen()) {
+        if (
+                isSettingsOpen()
+        ) {
+
             showHome();
+
             return;
         }
+
 
         super.onBackPressed();
     }
 
 
+    // =========================================================
+    // Notch
+    // =========================================================
+
     @Override
     public void onAttachedToWindow() {
 
-        LauncherPreferences.computeNotchSize(this);
+        LauncherPreferences
+                .computeNotchSize(
+                        this
+                );
     }
-
 }
+

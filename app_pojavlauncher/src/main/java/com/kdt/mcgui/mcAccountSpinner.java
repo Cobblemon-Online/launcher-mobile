@@ -194,6 +194,16 @@ public class mcAccountSpinner extends AppCompatSpinner implements AdapterView.On
         removeAccount(getSelectedItemPosition());
     }
 
+    public void removeAccount(String username) {
+        int position = mAccountList.indexOf(username);
+
+        if(position <= 0) {
+            return;
+        }
+
+        removeAccount(position);
+    }
+
     private void removeAccount(int position) {
         if(position == 0) return;
         File accountFile = new File(Tools.DIR_ACCOUNT_NEW, mAccountList.get(position)+".json");
