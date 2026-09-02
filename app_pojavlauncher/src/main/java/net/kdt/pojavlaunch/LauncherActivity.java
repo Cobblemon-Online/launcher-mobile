@@ -39,6 +39,8 @@ import net.kdt.pojavlaunch.modloaders.modpacks.api.CommonApi;
 import net.kdt.pojavlaunch.modloaders.modpacks.api.ModLoader;
 import net.kdt.pojavlaunch.modloaders.modpacks.api.NotificationDownloadListener;
 import net.kdt.pojavlaunch.modloaders.modpacks.imagecache.IconCacheJanitor;
+import net.kdt.pojavlaunch.modpacks.ManagedModpack;
+import net.kdt.pojavlaunch.modpacks.ManagedModpackCatalog;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
 import net.kdt.pojavlaunch.progresskeeper.TaskCountListener;
@@ -61,9 +63,12 @@ import java.lang.ref.WeakReference;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
+import java.util.List;
 import java.util.Map;
 
+
 public class LauncherActivity extends BaseActivity {
+
 
     // =========================================================
     // Fragment tags
@@ -85,44 +90,46 @@ public class LauncherActivity extends BaseActivity {
 
 
     // =========================================================
-    // Mod installer
+    // Preferences do launcher gerenciado
     // =========================================================
 
-    public final ActivityResultLauncher<Object> modInstallerLauncher =
-            registerForActivityResult(
-                    new OpenDocumentWithExtension("jar"),
-                    data -> {
-                        if (data != null) {
-                            Tools.launchModInstaller(
-                                    this,
-                                    data
-                            );
-                        }
-                    }
-            );
+    private static final String PREF_MANAGED_PACK_ID =
+            "managed_pack_id";
 
 
     // =========================================================
-    // Modpack gerenciado
+    // Estado dos modpacks gerenciados
     // =========================================================
 
-    private static final String BUNDLED_MRPACK_ASSET =
-            "cobblemon_online.mrpack";
+    /*
+     * ID do pack que está sendo preparado neste momento.
+     *
+     * null = nenhum pack sendo preparado.
+     */
+    private volatile String mPreparingManagedPackId =
+            null;
 
-    private volatile boolean mManagedPackReady = false;
 
-    private volatile boolean mManagedPackPreparing = false;
+    /*
+     * ID do pack que está efetivamente pronto e cujo
+     * MinecraftProfile foi selecionado.
+     *
+     * null = nenhum pack pronto nesta execução ainda.
+     */
+    private volatile String mReadyManagedPackId =
+            null;
 
 
     // =========================================================
-    // Estado visual do launcher
+    // Estado visual
     // =========================================================
 
-    private boolean mLauncherLoading = false;
+    private boolean mLauncherLoading =
+            false;
 
 
     // =========================================================
-    // Views legadas que continuam existindo
+    // Views legadas
     // =========================================================
 
     private CenterCropVideoView mBackgroundVideo;
@@ -133,7 +140,7 @@ public class LauncherActivity extends BaseActivity {
 
 
     // =========================================================
-    // Infraestrutura interna
+    // Infraestrutura
     // =========================================================
 
     private ProgressServiceKeeper mProgressServiceKeeper;
@@ -161,6 +168,26 @@ public class LauncherActivity extends BaseActivity {
 
 
     // =========================================================
+    // Mod installer
+    // =========================================================
+
+    public final ActivityResultLauncher<Object> modInstallerLauncher =
+            registerForActivityResult(
+                    new OpenDocumentWithExtension("jar"),
+                    data -> {
+
+                        if (data != null) {
+
+                            Tools.launchModInstaller(
+                                    this,
+                                    data
+                            );
+                        }
+                    }
+            );
+
+
+    // =========================================================
     // Listener de configurações
     // =========================================================
 
@@ -168,7 +195,20 @@ public class LauncherActivity extends BaseActivity {
             (key, value) -> {
 
                 if ("true".equals(value)) {
-                    showHome();
+
+                    if (
+                            getSupportFragmentManager()
+                                    .getBackStackEntryCount()
+                                    > 0
+                    ) {
+
+                        getSupportFragmentManager()
+                                .popBackStack();
+
+                    } else {
+
+                        showSettings();
+                    }
                 }
 
                 return false;
@@ -176,7 +216,7 @@ public class LauncherActivity extends BaseActivity {
 
 
     // =========================================================
-    // Compatibilidade com LAUNCH_GAME antigo
+    // Compatibilidade LAUNCH_GAME
     // =========================================================
 
     private final ExtraListener<Boolean> mLaunchGameListener =
@@ -189,32 +229,36 @@ public class LauncherActivity extends BaseActivity {
 
 
     // =========================================================
-    // Atualiza Compose quando existem tarefas
+    // Tasks
     // =========================================================
 
     private final TaskCountListener mTaskCountListener =
             taskCount -> {
 
-                Tools.runOnUiThread(() -> {
+                Tools.runOnUiThread(
+                        () -> {
 
-                    boolean loading =
-                            taskCount > 0;
+                            boolean loading =
+                                    taskCount > 0;
 
-                    setLoading(
-                            loading
-                    );
+                            setLoading(
+                                    loading
+                            );
 
-                    if (
-                            loading
-                                    && mNotificationManager != null
-                    ) {
 
-                        mNotificationManager.cancel(
-                                NotificationUtils
-                                        .NOTIFICATION_ID_GAME_START
-                        );
-                    }
-                });
+                            if (
+                                    loading
+                                            && mNotificationManager
+                                            != null
+                            ) {
+
+                                mNotificationManager.cancel(
+                                        NotificationUtils
+                                                .NOTIFICATION_ID_GAME_START
+                                );
+                            }
+                        }
+                );
             };
 
 
@@ -234,14 +278,10 @@ public class LauncherActivity extends BaseActivity {
 
     @Override
     public boolean setFullscreen() {
+
         return false;
     }
 
-    public void deleteAccountFromCompose(
-            String username
-    ) {
-        mAccountSpinner.removeAccount(username);
-    }
 
     // =========================================================
     // onCreate
@@ -255,6 +295,8 @@ public class LauncherActivity extends BaseActivity {
         super.onCreate(
                 savedInstanceState
         );
+
+
         Log.d(
                 "RENDER_TEST",
                 "Hardware accelerated: "
@@ -263,24 +305,27 @@ public class LauncherActivity extends BaseActivity {
                         .isHardwareAccelerated()
         );
 
+
         /*
-         * Necessário porque essa Activity/BaseActivity antiga
-         * não estava instalando automaticamente os ViewTree owners
-         * esperados pelo Compose.
+         * Necessário para Compose dentro dessa Activity
+         * herdada do Pojav.
          */
         View decorView =
                 getWindow()
                         .getDecorView();
+
 
         ViewTreeLifecycleOwner.set(
                 decorView,
                 this
         );
 
+
         ViewTreeViewModelStoreOwner.set(
                 decorView,
                 this
         );
+
 
         ViewTreeSavedStateRegistryOwner.set(
                 decorView,
@@ -309,23 +354,27 @@ public class LauncherActivity extends BaseActivity {
 
 
         /*
-         * FragmentManager restaura sozinho o Fragment atual
-         * após recriação da Activity.
-         *
-         * Só criamos a Home na primeira abertura.
+         * O FragmentManager restaura o Fragment após
+         * recriação da Activity.
          */
-        if (savedInstanceState == null) {
+        if (
+                savedInstanceState
+                        == null
+        ) {
 
             showHome();
         }
 
 
-        prepareBundledModpack();
+        /*
+         * Prepara automaticamente o pack selecionado.
+         */
+        prepareSelectedManagedModpack();
     }
 
 
     // =========================================================
-    // Views legadas
+    // Views
     // =========================================================
 
     private void bindViews() {
@@ -335,10 +384,12 @@ public class LauncherActivity extends BaseActivity {
                         R.id.background_video
                 );
 
+
         mAccountSpinner =
                 findViewById(
                         R.id.account_spinner
                 );
+
 
         mProgressLayout =
                 findViewById(
@@ -352,16 +403,19 @@ public class LauncherActivity extends BaseActivity {
     // =========================================================
 
     public void launchGameFromCompose() {
+
         launchGame();
     }
 
 
     public void showSettingsFromCompose() {
+
         showSettings();
     }
 
 
     public void showHomeFromSettings() {
+
         showHome();
     }
 
@@ -377,7 +431,153 @@ public class LauncherActivity extends BaseActivity {
 
 
     public boolean isLauncherLoading() {
+
         return mLauncherLoading;
+    }
+
+
+    public void deleteAccountFromCompose(
+            String username
+    ) {
+
+        mAccountSpinner.removeAccount(
+                username
+        );
+    }
+
+
+    // =========================================================
+    // Bridges de modpack para Compose
+    // =========================================================
+
+    /*
+     * Lista que a tela Compose pode utilizar para
+     * renderizar os cards.
+     */
+    public List<ManagedModpack>
+    getManagedModpacksFromCompose() {
+
+        return ManagedModpackCatalog
+                .getPacks();
+    }
+
+
+    /*
+     * Retorna o ID atualmente selecionado.
+     */
+    public String
+    getSelectedManagedModpackId() {
+
+        return getSelectedManagedModpack()
+                .getId();
+    }
+
+
+    /*
+     * Usuário selecionou outro modpack na UI.
+     */
+    public void selectManagedModpackFromCompose(
+            String packId
+    ) {
+
+        ManagedModpack pack =
+                ManagedModpackCatalog
+                        .getById(
+                                packId
+                        );
+
+
+        if (pack == null) {
+
+            Log.e(
+                    "MANAGED_PACK",
+                    "Modpack desconhecido: "
+                            + packId
+            );
+
+            return;
+        }
+
+
+        ManagedModpack currentPack =
+                getSelectedManagedModpack();
+
+
+        /*
+         * Já está selecionado.
+         *
+         * Mesmo assim verificamos se precisa preparar.
+         */
+        if (
+                currentPack
+                        .getId()
+                        .equals(
+                                pack.getId()
+                        )
+        ) {
+
+            prepareManagedModpack(
+                    pack
+            );
+
+            return;
+        }
+
+
+        Log.d(
+                "MANAGED_PACK",
+                "Selecionando "
+                        + pack.getName()
+                        + " ["
+                        + pack.getId()
+                        + "]"
+        );
+
+
+        LauncherPreferences
+                .DEFAULT_PREF
+                .edit()
+                .putString(
+                        PREF_MANAGED_PACK_ID,
+                        pack.getId()
+                )
+                .apply();
+
+
+        /*
+         * O pack anteriormente pronto não representa
+         * mais a seleção atual.
+         */
+        mReadyManagedPackId =
+                null;
+
+
+        /*
+         * Se outro pack estiver sendo preparado,
+         * prepareManagedModpack() não iniciará outro
+         * processo simultaneamente.
+         *
+         * Quando o atual terminar, ele verifica a nova
+         * seleção e prepara este.
+         */
+        prepareManagedModpack(
+                pack
+        );
+    }
+
+
+    /*
+     * Compatibilidade temporária.
+     *
+     * Se alguma tela antiga ainda chamar
+     * installBundledModpack(), não quebra o build.
+     *
+     * Agora ele simplesmente prepara o pack selecionado.
+     */
+    @Deprecated
+    public void installBundledModpack() {
+
+        prepareSelectedManagedModpack();
     }
 
 
@@ -394,11 +594,13 @@ public class LauncherActivity extends BaseActivity {
                         urlResource
                 );
 
+
         Intent intent =
                 new Intent(
                         Intent.ACTION_VIEW,
                         Uri.parse(url)
                 );
+
 
         try {
 
@@ -406,7 +608,9 @@ public class LauncherActivity extends BaseActivity {
                     intent
             );
 
-        } catch (Exception e) {
+        } catch (
+                Exception e
+        ) {
 
             Log.e(
                     "LAUNCHER_UI",
@@ -424,15 +628,16 @@ public class LauncherActivity extends BaseActivity {
 
     private void showHome() {
 
-        /*
-         * Se a Home já estiver aberta, não recria.
-         */
         Fragment currentFragment =
                 getSupportFragmentManager()
                         .findFragmentById(
                                 R.id.container_fragment
                         );
 
+
+        /*
+         * Home já está aberta.
+         */
         if (
                 currentFragment
                         instanceof LauncherHomeComposeFragment
@@ -466,10 +671,12 @@ public class LauncherActivity extends BaseActivity {
                                 R.id.container_fragment
                         );
 
+
         if (
                 currentFragment
                         instanceof SettingsComposeFragment
         ) {
+
             return;
         }
 
@@ -495,6 +702,7 @@ public class LauncherActivity extends BaseActivity {
                         .findFragmentById(
                                 R.id.container_fragment
                         );
+
 
         return fragment
                 instanceof SettingsComposeFragment;
@@ -528,6 +736,7 @@ public class LauncherActivity extends BaseActivity {
                             true
                     );
 
+
                     mediaPlayer.setVolume(
                             0f,
                             0f
@@ -541,13 +750,11 @@ public class LauncherActivity extends BaseActivity {
 
 
                     /*
-                     * Importante:
-                     *
-                     * Se o usuário já tiver aberto Settings
-                     * enquanto o vídeo carregava, não deixa
-                     * onPrepared() religar o vídeo atrás dela.
+                     * Não inicia atrás das configurações.
                      */
-                    if (!isSettingsOpen()) {
+                    if (
+                            !isSettingsOpen()
+                    ) {
 
                         mBackgroundVideo.start();
                     }
@@ -559,8 +766,10 @@ public class LauncherActivity extends BaseActivity {
     private void pauseBackgroundVideo() {
 
         if (
-                mBackgroundVideo != null
-                        && mBackgroundVideo.isPlaying()
+                mBackgroundVideo
+                        != null
+                        && mBackgroundVideo
+                        .isPlaying()
         ) {
 
             mBackgroundVideo.pause();
@@ -571,8 +780,10 @@ public class LauncherActivity extends BaseActivity {
     private void resumeBackgroundVideo() {
 
         if (
-                mBackgroundVideo != null
-                        && !mBackgroundVideo.isPlaying()
+                mBackgroundVideo
+                        != null
+                        && !mBackgroundVideo
+                        .isPlaying()
                         && !isSettingsOpen()
         ) {
 
@@ -582,7 +793,7 @@ public class LauncherActivity extends BaseActivity {
 
 
     // =========================================================
-    // Loading Compose
+    // Loading
     // =========================================================
 
     private void setLoading(
@@ -605,9 +816,11 @@ public class LauncherActivity extends BaseActivity {
                         instanceof LauncherHomeComposeFragment
         ) {
 
-            LauncherHomeComposeFragment homeFragment =
+            LauncherHomeComposeFragment
+                    homeFragment =
                     (LauncherHomeComposeFragment)
                             fragment;
+
 
             homeFragment.setLoadingState(
                     loading
@@ -622,17 +835,16 @@ public class LauncherActivity extends BaseActivity {
 
     public void refreshAccountSelection() {
 
-        if (mAccountSpinner != null) {
+        if (
+                mAccountSpinner
+                        != null
+        ) {
 
             mAccountSpinner
                     .reloadAccountSelection();
         }
 
 
-        /*
-         * Se a Home estiver visível, manda ela reler
-         * a conta atual.
-         */
         Fragment fragment =
                 getSupportFragmentManager()
                         .findFragmentById(
@@ -645,9 +857,11 @@ public class LauncherActivity extends BaseActivity {
                         instanceof LauncherHomeComposeFragment
         ) {
 
-            LauncherHomeComposeFragment homeFragment =
+            LauncherHomeComposeFragment
+                    homeFragment =
                     (LauncherHomeComposeFragment)
                             fragment;
+
 
             homeFragment.refreshAccount();
         }
@@ -655,23 +869,134 @@ public class LauncherActivity extends BaseActivity {
 
 
     // =========================================================
-    // Modpack
+    // Modpack - seleção
     // =========================================================
 
-    public void installBundledModpack() {
-        prepareBundledModpack();
+    private ManagedModpack
+    getSelectedManagedModpack() {
+
+        String selectedId =
+                LauncherPreferences
+                        .DEFAULT_PREF
+                        .getString(
+                                PREF_MANAGED_PACK_ID,
+                                ManagedModpackCatalog
+                                        .DEFAULT_PACK_ID
+                        );
+
+
+        ManagedModpack pack =
+                ManagedModpackCatalog
+                        .getById(
+                                selectedId
+                        );
+
+
+        /*
+         * Preference inválida ou pack removido
+         * do catálogo.
+         */
+        if (
+                pack == null
+        ) {
+
+            pack =
+                    ManagedModpackCatalog
+                            .getDefault();
+
+
+            LauncherPreferences
+                    .DEFAULT_PREF
+                    .edit()
+                    .putString(
+                            PREF_MANAGED_PACK_ID,
+                            pack.getId()
+                    )
+                    .apply();
+        }
+
+
+        return pack;
     }
 
 
-    private void prepareBundledModpack() {
+    private void
+    prepareSelectedManagedModpack() {
 
-        if (mManagedPackPreparing) {
+        ManagedModpack selectedPack =
+                getSelectedManagedModpack();
+
+
+        prepareManagedModpack(
+                selectedPack
+        );
+    }
+
+
+    // =========================================================
+    // Modpack - preparação
+    // =========================================================
+
+    private void prepareManagedModpack(
+            ManagedModpack pack
+    ) {
+
+        if (
+                pack == null
+        ) {
+
             return;
         }
 
 
-        mManagedPackPreparing =
-                true;
+        String packId =
+                pack.getId();
+
+
+        /*
+         * Esse mesmo pack já está pronto.
+         */
+        if (
+                packId.equals(
+                        mReadyManagedPackId
+                )
+        ) {
+
+            Log.d(
+                    "MANAGED_PACK",
+                    pack.getName()
+                            + " já está pronto"
+            );
+
+            return;
+        }
+
+
+        /*
+         * Já existe um pack sendo preparado.
+         *
+         * Não instalamos dois packs simultaneamente.
+         */
+        if (
+                mPreparingManagedPackId
+                        != null
+        ) {
+
+            Log.d(
+                    "MANAGED_PACK",
+                    "Já preparando "
+                            + mPreparingManagedPackId
+                            + ". "
+                            + packId
+                            + " será verificado depois."
+            );
+
+            return;
+        }
+
+
+        mPreparingManagedPackId =
+                packId;
 
 
         setLoading(
@@ -679,359 +1004,375 @@ public class LauncherActivity extends BaseActivity {
         );
 
 
+        Log.d(
+                "MANAGED_PACK",
+                "Preparando "
+                        + pack.getName()
+                        + " ["
+                        + packId
+                        + "]"
+        );
+
+
         PojavApplication
                 .sExecutorService
-                .execute(() -> {
+                .execute(
+                        () -> {
 
-                    File modpackFile =
-                            null;
-
-                    try {
-
-                        // =========================================
-                        // 1. Hash do MRPACK embutido
-                        // =========================================
-
-                        String expectedHash =
-                                calculateBundledMrpackSha1();
+                            File modpackFile =
+                                    null;
 
 
-                        Log.d(
-                                "COBBLEMON_PACK",
-                                "MRPACK embutido SHA-1: "
-                                        + expectedHash
-                        );
+                            try {
+
+                                // =================================
+                                // Hash do MRPACK
+                                // =================================
+
+                                String expectedHash =
+                                        calculateManagedMrpackSha1(
+                                                pack
+                                        );
 
 
-                        // =========================================
-                        // 2. Carrega launcher_profiles
-                        // =========================================
-
-                        LauncherProfiles.load();
-
-
-                        // =========================================
-                        // 3. Verifica instalação existente
-                        // =========================================
-
-                        String profileKey =
-                                findBundledModpackProfile(
-                                        expectedHash
+                                Log.d(
+                                        "MANAGED_PACK",
+                                        "SHA-1 "
+                                                + pack.getName()
+                                                + ": "
+                                                + expectedHash
                                 );
 
 
-                        // =========================================
-                        // 4. Importa caso ainda não exista
-                        // =========================================
+                                // =================================
+                                // Carrega profiles
+                                // =================================
 
-                        if (profileKey == null) {
-
-                            Log.d(
-                                    "COBBLEMON_PACK",
-                                    "Pack ainda não instalado. Importando..."
-                            );
+                                LauncherProfiles.load();
 
 
-                            modpackFile =
-                                    copyBundledMrpackToCache();
+                                String profileKey =
+                                        findManagedModpackProfile(
+                                                expectedHash
+                                        );
 
 
-                            CommonApi commonApi =
-                                    new CommonApi(
-                                            getString(
-                                                    R.string
-                                                            .curseforge_api_key
+                                // =================================
+                                // Ainda não instalado
+                                // =================================
+
+                                if (
+                                        profileKey
+                                                == null
+                                ) {
+
+                                    Log.d(
+                                            "MANAGED_PACK",
+                                            pack.getName()
+                                                    + " ainda não instalado"
+                                    );
+
+
+                                    modpackFile =
+                                            copyManagedMrpackToCache(
+                                                    pack
+                                            );
+
+
+                                    CommonApi commonApi =
+                                            new CommonApi(
+                                                    getString(
+                                                            R.string
+                                                                    .curseforge_api_key
+                                                    )
+                                            );
+
+
+                                    Uri modpackUri =
+                                            Uri.fromFile(
+                                                    modpackFile
+                                            );
+
+
+                                    ModLoader loaderInfo =
+                                            commonApi.importModpack(
+                                                    LauncherActivity.this,
+                                                    modpackUri
+                                            );
+
+
+                                    if (
+                                            loaderInfo
+                                                    == null
+                                    ) {
+
+                                        throw new IOException(
+                                                "O MRPACK não retornou "
+                                                        + "um ModLoader válido"
+                                        );
+                                    }
+
+
+                                    // =================================
+                                    // Instala arquivos do pack
+                                    // =================================
+
+                                    loaderInfo
+                                            .getDownloadTask(
+                                                    new NotificationDownloadListener(
+                                                            LauncherActivity.this,
+                                                            loaderInfo
+                                                    )
                                             )
-                                    );
+                                            .run();
 
 
-                            Uri modpackUri =
-                                    Uri.fromFile(
-                                            modpackFile
-                                    );
+                                    // =================================
+                                    // Verifica loader
+                                    // =================================
+
+                                    String loaderVersionId =
+                                            loaderInfo
+                                                    .getVersionId();
 
 
-                            ModLoader loaderInfo =
-                                    commonApi.importModpack(
-                                            LauncherActivity.this,
-                                            modpackUri
-                                    );
+                                    File loaderVersionJson =
+                                            new File(
+                                                    Tools.DIR_HOME_VERSION,
+                                                    loaderVersionId
+                                                            + "/"
+                                                            + loaderVersionId
+                                                            + ".json"
+                                            );
 
 
-                            if (loaderInfo == null) {
+                                    if (
+                                            !loaderVersionJson
+                                                    .isFile()
+                                    ) {
 
-                                throw new IOException(
-                                        "O MRPACK não retornou um ModLoader válido"
+                                        throw new IOException(
+                                                "Loader não foi instalado "
+                                                        + "corretamente: "
+                                                        + loaderVersionId
+                                        );
+                                    }
+
+
+                                    // =================================
+                                    // Recarrega profiles
+                                    // =================================
+
+                                    LauncherProfiles.load();
+
+
+                                    profileKey =
+                                            findManagedModpackProfile(
+                                                    expectedHash
+                                            );
+
+
+                                    if (
+                                            profileKey
+                                                    == null
+                                    ) {
+
+                                        throw new IOException(
+                                                "O pack foi importado, "
+                                                        + "mas o profile "
+                                                        + "não foi encontrado"
+                                        );
+                                    }
+                                }
+
+
+                                Log.d(
+                                        "MANAGED_PACK",
+                                        "Profile encontrado para "
+                                                + pack.getName()
+                                                + ": "
+                                                + profileKey
                                 );
-                            }
 
 
-                            loaderInfo
-                                    .getDownloadTask(
-                                            new NotificationDownloadListener(
-                                                    this,
-                                                    loaderInfo
-                                            )
-                                    )
-                                    .run();
+                                // =================================
+                                // Confere seleção atual
+                                // =================================
+
+                                ManagedModpack
+                                        currentlySelectedPack =
+                                        getSelectedManagedModpack();
 
 
-                            String loaderVersionId =
-                                    loaderInfo.getVersionId();
+                                /*
+                                 * O usuário pode ter trocado de pack
+                                 * enquanto esse estava instalando.
+                                 *
+                                 * Nesse caso o pack foi instalado,
+                                 * mas NÃO selecionamos seu profile.
+                                 */
+                                if (
+                                        packId.equals(
+                                                currentlySelectedPack
+                                                        .getId()
+                                        )
+                                ) {
 
-
-                            File loaderVersionJson =
-                                    new File(
-                                            Tools.DIR_HOME_VERSION,
-                                            loaderVersionId
-                                                    + "/"
-                                                    + loaderVersionId
-                                                    + ".json"
+                                    selectManagedProfile(
+                                            profileKey
                                     );
 
 
-                            if (
-                                    !loaderVersionJson
-                                            .isFile()
+                                    mReadyManagedPackId =
+                                            packId;
+
+
+                                    Log.d(
+                                            "MANAGED_PACK",
+                                            pack.getName()
+                                                    + " pronto para jogar"
+                                    );
+
+                                } else {
+
+                                    Log.d(
+                                            "MANAGED_PACK",
+                                            pack.getName()
+                                                    + " terminou de preparar, "
+                                                    + "mas agora o selecionado é "
+                                                    + currentlySelectedPack
+                                                    .getName()
+                                    );
+                                }
+
+
+                            } catch (
+                                    IOException
+                                    | NoSuchAlgorithmException e
                             ) {
 
-                                throw new IOException(
-                                        "Fabric não foi instalado corretamente: "
-                                                + loaderVersionId
+                                Log.e(
+                                        "MANAGED_PACK",
+                                        "Falha preparando "
+                                                + pack.getName(),
+                                        e
                                 );
-                            }
 
 
-                            /*
-                             * O importador alterou launcher_profiles.
-                             * Recarrega para pegar o estado atualizado.
-                             */
-                            LauncherProfiles.load();
+                                /*
+                                 * Só mostramos erro se esse ainda
+                                 * for o pack selecionado.
+                                 *
+                                 * Se o usuário trocou de pack durante
+                                 * o processo, apenas seguimos para o novo.
+                                 */
+                                ManagedModpack
+                                        currentlySelectedPack =
+                                        getSelectedManagedModpack();
 
 
-                            profileKey =
-                                    findBundledModpackProfile(
-                                            expectedHash
+                                if (
+                                        packId.equals(
+                                                currentlySelectedPack
+                                                        .getId()
+                                        )
+                                ) {
+
+                                    Tools.showErrorRemote(
+                                            LauncherActivity.this,
+                                            R.string
+                                                    .modpack_install_download_failed,
+                                            e
+                                    );
+                                }
+
+
+                            } finally {
+
+                                // =================================
+                                // Limpa MRPACK temporário
+                                // =================================
+
+                                if (
+                                        modpackFile
+                                                != null
+                                                && modpackFile
+                                                .exists()
+                                ) {
+
+                                    //noinspection ResultOfMethodCallIgnored
+                                    modpackFile.delete();
+                                }
+
+
+                                mPreparingManagedPackId =
+                                        null;
+
+
+                                // =================================
+                                // Verifica se seleção mudou
+                                // =================================
+
+                                ManagedModpack
+                                        currentlySelectedPack =
+                                        getSelectedManagedModpack();
+
+
+                                /*
+                                 * Só inicia automaticamente outro
+                                 * processo se o usuário tiver realmente
+                                 * mudado de pack durante a preparação.
+                                 *
+                                 * Isso evita loop infinito caso a
+                                 * instalação do mesmo pack falhe.
+                                 */
+                                boolean selectionChanged =
+                                        !packId.equals(
+                                                currentlySelectedPack
+                                                        .getId()
+                                        );
+
+
+                                if (
+                                        selectionChanged
+                                ) {
+
+                                    Log.d(
+                                            "MANAGED_PACK",
+                                            "Seleção mudou para "
+                                                    + currentlySelectedPack
+                                                    .getName()
+                                                    + ". Preparando novo pack."
                                     );
 
 
-                            if (profileKey == null) {
+                                    runOnUiThread(
+                                            () ->
+                                                    prepareSelectedManagedModpack()
+                                    );
 
-                                throw new IOException(
-                                        "O pack foi importado, mas o profile não foi encontrado"
-                                );
+                                } else {
+
+                                    runOnUiThread(
+                                            () ->
+                                                    setLoading(
+                                                            false
+                                                    )
+                                    );
+                                }
                             }
                         }
-
-
-                        // =========================================
-                        // 5. Seleciona o profile
-                        // =========================================
-
-                        selectManagedProfile(
-                                profileKey
-                        );
-
-
-                        mManagedPackReady =
-                                true;
-
-
-                        Log.d(
-                                "COBBLEMON_PACK",
-                                "Cobblemon Online pronto para jogar"
-                        );
-
-
-                    } catch (
-                            IOException
-                            | NoSuchAlgorithmException e
-                    ) {
-
-                        mManagedPackReady =
-                                false;
-
-
-                        Log.e(
-                                "COBBLEMON_PACK",
-                                "Falha preparando Cobblemon Online",
-                                e
-                        );
-
-
-                        Tools.showErrorRemote(
-                                this,
-                                R.string
-                                        .modpack_install_download_failed,
-                                e
-                        );
-
-
-                    } catch (
-                            IllegalArgumentException e
-                    ) {
-
-                        mManagedPackReady =
-                                false;
-
-
-                        Log.e(
-                                "COBBLEMON_PACK",
-                                "MRPACK inválido",
-                                e
-                        );
-
-
-                        Tools.showError(
-                                this,
-                                R.string.not_modpack_file,
-                                e
-                        );
-
-
-                    } finally {
-
-                        if (
-                                modpackFile != null
-                                        && modpackFile.exists()
-                        ) {
-
-                            //noinspection ResultOfMethodCallIgnored
-                            modpackFile.delete();
-                        }
-
-
-                        mManagedPackPreparing =
-                                false;
-
-
-                        runOnUiThread(
-                                () ->
-                                        setLoading(
-                                                false
-                                        )
-                        );
-                    }
-                });
+                );
     }
 
 
-    private String findBundledModpackProfile(
-            String expectedHash
-    ) {
+    // =========================================================
+    // Modpack - cache
+    // =========================================================
 
-        if (
-                LauncherProfiles.mainProfileJson == null
-                        || LauncherProfiles
-                        .mainProfileJson
-                        .profiles == null
-        ) {
-
-            return null;
-        }
-
-
-        for (
-                Map.Entry<String, MinecraftProfile> entry :
-                LauncherProfiles
-                        .mainProfileJson
-                        .profiles
-                        .entrySet()
-        ) {
-
-            MinecraftProfile profile =
-                    entry.getValue();
-
-
-            if (
-                    profile == null
-                            || profile.gameDir == null
-                            || profile.lastVersionId == null
-            ) {
-
-                continue;
-            }
-
-
-            if (
-                    !profile.gameDir.endsWith(
-                            expectedHash
-                    )
-            ) {
-
-                continue;
-            }
-
-
-            String relativeGameDir =
-                    profile.gameDir.startsWith("./")
-                            ? profile.gameDir.substring(2)
-                            : profile.gameDir;
-
-
-            File instanceDirectory =
-                    new File(
-                            Tools.DIR_GAME_HOME,
-                            relativeGameDir
-                    );
-
-
-            if (
-                    !instanceDirectory.isDirectory()
-            ) {
-
-                continue;
-            }
-
-
-            return entry.getKey();
-        }
-
-
-        return null;
-    }
-
-
-    private void selectManagedProfile(
-            String profileKey
-    ) {
-
-        LauncherPreferences
-                .DEFAULT_PREF
-                .edit()
-                .putString(
-                        LauncherPreferences
-                                .PREF_KEY_CURRENT_PROFILE,
-                        profileKey
-                )
-                .apply();
-
-
-        MinecraftProfile profile =
-                LauncherProfiles
-                        .mainProfileJson
-                        .profiles
-                        .get(
-                                profileKey
-                        );
-
-
-        Log.d(
-                "COBBLEMON_PACK",
-                "Profile selecionado: "
-                        + profileKey
-                        + " | "
-                        + (
-                        profile != null
-                                ? profile.lastVersionId
-                                : "null"
-                )
-        );
-    }
-
-
-    private File copyBundledMrpackToCache()
-            throws IOException {
+    private File copyManagedMrpackToCache(
+            ManagedModpack pack
+    ) throws IOException {
 
         File cacheDirectory =
                 Tools.DIR_CACHE;
@@ -1049,14 +1390,25 @@ public class LauncherActivity extends BaseActivity {
         File destination =
                 new File(
                         cacheDirectory,
-                        "cobblemon_online_import.mrpack"
+                        pack.getId()
+                                + "_import.mrpack"
                 );
+
+
+        Log.d(
+                "MANAGED_PACK",
+                "Copiando asset "
+                        + pack.getAssetFile()
+                        + " para "
+                        + destination
+                        .getAbsolutePath()
+        );
 
 
         try (
                 InputStream input =
                         getAssets().open(
-                                BUNDLED_MRPACK_ASSET
+                                pack.getAssetFile()
                         );
 
                 FileOutputStream output =
@@ -1093,8 +1445,154 @@ public class LauncherActivity extends BaseActivity {
     }
 
 
-    private String calculateBundledMrpackSha1()
-            throws IOException,
+    // =========================================================
+    // Modpack - localizar profile
+    // =========================================================
+
+    private String findManagedModpackProfile(
+            String expectedHash
+    ) {
+
+        if (
+                LauncherProfiles
+                        .mainProfileJson
+                        == null
+                        || LauncherProfiles
+                        .mainProfileJson
+                        .profiles
+                        == null
+        ) {
+
+            return null;
+        }
+
+
+        for (
+                Map.Entry<
+                        String,
+                        MinecraftProfile
+                        > entry :
+                LauncherProfiles
+                        .mainProfileJson
+                        .profiles
+                        .entrySet()
+        ) {
+
+            MinecraftProfile profile =
+                    entry.getValue();
+
+
+            if (
+                    profile
+                            == null
+                            || profile.gameDir
+                            == null
+                            || profile.lastVersionId
+                            == null
+            ) {
+
+                continue;
+            }
+
+
+            /*
+             * CommonApi cria a instância usando o hash
+             * do MRPACK.
+             */
+            if (
+                    !profile.gameDir
+                            .endsWith(
+                                    expectedHash
+                            )
+            ) {
+
+                continue;
+            }
+
+
+            String relativeGameDir =
+                    profile.gameDir
+                            .startsWith("./")
+                            ? profile.gameDir
+                            .substring(2)
+                            : profile.gameDir;
+
+
+            File instanceDirectory =
+                    new File(
+                            Tools.DIR_GAME_HOME,
+                            relativeGameDir
+                    );
+
+
+            if (
+                    !instanceDirectory
+                            .isDirectory()
+            ) {
+
+                continue;
+            }
+
+
+            return entry.getKey();
+        }
+
+
+        return null;
+    }
+
+
+    // =========================================================
+    // Modpack - selecionar profile
+    // =========================================================
+
+    private void selectManagedProfile(
+            String profileKey
+    ) {
+
+        LauncherPreferences
+                .DEFAULT_PREF
+                .edit()
+                .putString(
+                        LauncherPreferences
+                                .PREF_KEY_CURRENT_PROFILE,
+                        profileKey
+                )
+                .apply();
+
+
+        MinecraftProfile profile =
+                LauncherProfiles
+                        .mainProfileJson
+                        .profiles
+                        .get(
+                                profileKey
+                        );
+
+
+        Log.d(
+                "MANAGED_PACK",
+                "Profile selecionado: "
+                        + profileKey
+                        + " | versão: "
+                        + (
+                        profile
+                                != null
+                                ? profile.lastVersionId
+                                : "null"
+                )
+        );
+    }
+
+
+    // =========================================================
+    // Modpack - SHA-1
+    // =========================================================
+
+    private String calculateManagedMrpackSha1(
+            ManagedModpack pack
+    ) throws
+            IOException,
             NoSuchAlgorithmException {
 
         MessageDigest digest =
@@ -1106,7 +1604,7 @@ public class LauncherActivity extends BaseActivity {
         try (
                 InputStream input =
                         getAssets().open(
-                                BUNDLED_MRPACK_ASSET
+                                pack.getAssetFile()
                         )
         ) {
 
@@ -1142,7 +1640,8 @@ public class LauncherActivity extends BaseActivity {
 
 
         for (
-                byte b : hash
+                byte b :
+                hash
         ) {
 
             result.append(
@@ -1257,17 +1756,21 @@ public class LauncherActivity extends BaseActivity {
                 ProgressLayout.DOWNLOAD_MINECRAFT
         );
 
+
         mProgressLayout.observe(
                 ProgressLayout.UNPACK_RUNTIME
         );
+
 
         mProgressLayout.observe(
                 ProgressLayout.INSTALL_MODPACK
         );
 
+
         mProgressLayout.observe(
                 ProgressLayout.AUTHENTICATE_MICROSOFT
         );
+
 
         mProgressLayout.observe(
                 ProgressLayout.DOWNLOAD_VERSION_LIST
@@ -1281,23 +1784,47 @@ public class LauncherActivity extends BaseActivity {
 
     private void launchGame() {
 
+        // =========================================
+        // Modpack selecionado
+        // =========================================
+
+        ManagedModpack selectedPack =
+                getSelectedManagedModpack();
+
+
         /*
-         * Modpack ainda não ficou pronto.
+         * O botão Jogar só pode prosseguir se
+         * O PACK ATUALMENTE SELECIONADO estiver pronto.
          */
-        if (!mManagedPackReady) {
+        if (
+                !selectedPack
+                        .getId()
+                        .equals(
+                                mReadyManagedPackId
+                        )
+        ) {
 
-            if (!mManagedPackPreparing) {
+            Log.d(
+                    "MANAGED_PACK",
+                    "Tentativa de jogar com "
+                            + selectedPack.getName()
+                            + " ainda não preparado"
+            );
 
-                prepareBundledModpack();
-            }
+
+            prepareManagedModpack(
+                    selectedPack
+            );
+
 
             return;
         }
 
 
-        /*
-         * Alguma tarefa já está rodando.
-         */
+        // =========================================
+        // Tasks em andamento
+        // =========================================
+
         if (
                 mProgressLayout
                         .hasProcesses()
@@ -1309,13 +1836,15 @@ public class LauncherActivity extends BaseActivity {
                     Toast.LENGTH_LONG
             ).show();
 
+
             return;
         }
 
 
-        /*
-         * Profile/instância selecionada.
-         */
+        // =========================================
+        // Profile selecionado
+        // =========================================
+
         String selectedProfile =
                 LauncherPreferences
                         .DEFAULT_PREF
@@ -1327,10 +1856,13 @@ public class LauncherActivity extends BaseActivity {
 
 
         if (
-                LauncherProfiles.mainProfileJson == null
+                LauncherProfiles
+                        .mainProfileJson
+                        == null
                         || LauncherProfiles
                         .mainProfileJson
-                        .profiles == null
+                        .profiles
+                        == null
                         || !LauncherProfiles
                         .mainProfileJson
                         .profiles
@@ -1344,6 +1876,7 @@ public class LauncherActivity extends BaseActivity {
                     R.string.error_no_version,
                     Toast.LENGTH_LONG
             ).show();
+
 
             return;
         }
@@ -1359,8 +1892,10 @@ public class LauncherActivity extends BaseActivity {
 
 
         if (
-                profile == null
-                        || profile.lastVersionId == null
+                profile
+                        == null
+                        || profile.lastVersionId
+                        == null
                         || "Unknown".equals(
                         profile.lastVersionId
                 )
@@ -1372,16 +1907,15 @@ public class LauncherActivity extends BaseActivity {
                     Toast.LENGTH_LONG
             ).show();
 
+
             return;
         }
 
 
-        /*
-         * Conta.
-         *
-         * Mantemos mcAccountSpinner internamente porque
-         * o pipeline legado ainda depende dele.
-         */
+        // =========================================
+        // Conta
+        // =========================================
+
         if (
                 mAccountSpinner
                         .getSelectedAccount()
@@ -1402,11 +1936,17 @@ public class LauncherActivity extends BaseActivity {
                     intent
             );
 
+
             finish();
+
 
             return;
         }
 
+
+        // =========================================
+        // Versão
+        // =========================================
 
         String normalizedVersionId =
                 AsyncMinecraftDownloader
@@ -1436,7 +1976,10 @@ public class LauncherActivity extends BaseActivity {
                     true;
 
 
-            if (mcVersion != null) {
+            if (
+                    mcVersion
+                            != null
+            ) {
 
                 try {
 
@@ -1453,11 +1996,14 @@ public class LauncherActivity extends BaseActivity {
                 } catch (
                         ParseException ignored
                 ) {
+
                 }
             }
 
 
-            if (isOlderThan13) {
+            if (
+                    isOlderThan13
+            ) {
 
                 hasNoOnlineProfileDialog(
                         this,
@@ -1470,23 +2016,25 @@ public class LauncherActivity extends BaseActivity {
                         )
                 );
 
+
                 return;
             }
         }
 
 
-        /*
-         * Compose muda barra social -> loading
-         * imediatamente.
-         */
+        // =========================================
+        // Loading
+        // =========================================
+
         setLoading(
                 true
         );
 
 
-        /*
-         * Pipeline original do Pojav.
-         */
+        // =========================================
+        // Pipeline original do Pojav
+        // =========================================
+
         new MinecraftDownloader()
                 .start(
                         this,
@@ -1512,7 +2060,9 @@ public class LauncherActivity extends BaseActivity {
                                 .RequestPermission(),
                         isAllowed -> {
 
-                            if (!isAllowed) {
+                            if (
+                                    !isAllowed
+                            ) {
 
                                 handleNoNotificationPermission();
 
@@ -1526,7 +2076,10 @@ public class LauncherActivity extends BaseActivity {
                                     );
 
 
-                            if (runnable != null) {
+                            if (
+                                    runnable
+                                            != null
+                            ) {
 
                                 runnable.run();
                             }
@@ -1548,7 +2101,8 @@ public class LauncherActivity extends BaseActivity {
 
                             if (
                                     isAllowed
-                                            && runnable != null
+                                            && runnable
+                                            != null
                             ) {
 
                                 runnable.run();
@@ -1648,20 +2202,29 @@ public class LauncherActivity extends BaseActivity {
 
     public boolean checkForNotificationPermission() {
 
-        return Build.VERSION.SDK_INT < 33
-                || ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS
-        ) != PackageManager.PERMISSION_DENIED;
+        return Build.VERSION.SDK_INT
+                < 33
+                || ContextCompat
+                .checkSelfPermission(
+                        this,
+                        Manifest.permission
+                                .POST_NOTIFICATIONS
+                )
+                != PackageManager
+                .PERMISSION_DENIED;
     }
 
 
     public boolean checkForMicrophonePermission() {
 
-        return ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.RECORD_AUDIO
-        ) != PackageManager.PERMISSION_DENIED;
+        return ContextCompat
+                .checkSelfPermission(
+                        this,
+                        Manifest.permission
+                                .RECORD_AUDIO
+                )
+                != PackageManager
+                .PERMISSION_DENIED;
     }
 
 
@@ -1670,7 +2233,8 @@ public class LauncherActivity extends BaseActivity {
     ) {
 
         if (
-                Build.VERSION.SDK_INT < 33
+                Build.VERSION.SDK_INT
+                        < 33
         ) {
 
             return;
@@ -1678,7 +2242,8 @@ public class LauncherActivity extends BaseActivity {
 
 
         if (
-                onSuccessRunnable != null
+                onSuccessRunnable
+                        != null
         ) {
 
             mRequestNotificationPermissionRunnable =
@@ -1701,7 +2266,8 @@ public class LauncherActivity extends BaseActivity {
     ) {
 
         if (
-                onSuccessRunnable != null
+                onSuccessRunnable
+                        != null
         ) {
 
             mRequestMicrophonePermissionRunnable =
@@ -1735,18 +2301,17 @@ public class LauncherActivity extends BaseActivity {
 
 
         if (
-                mInstallTracker != null
+                mInstallTracker
+                        != null
         ) {
 
             mInstallTracker.attach();
         }
 
 
-        /*
-         * Não religa vídeo caso a Activity esteja mostrando
-         * Settings.
-         */
-        if (!isSettingsOpen()) {
+        if (
+                !isSettingsOpen()
+        ) {
 
             resumeBackgroundVideo();
         }
@@ -1763,7 +2328,8 @@ public class LauncherActivity extends BaseActivity {
 
 
         if (
-                mInstallTracker != null
+                mInstallTracker
+                        != null
         ) {
 
             mInstallTracker.detach();
@@ -1778,7 +2344,8 @@ public class LauncherActivity extends BaseActivity {
     protected void onDestroy() {
 
         if (
-                mBackgroundVideo != null
+                mBackgroundVideo
+                        != null
         ) {
 
             mBackgroundVideo.stopPlayback();
@@ -1786,7 +2353,8 @@ public class LauncherActivity extends BaseActivity {
 
 
         if (
-                mProgressLayout != null
+                mProgressLayout
+                        != null
         ) {
 
             mProgressLayout.cleanUpObservers();
@@ -1799,7 +2367,8 @@ public class LauncherActivity extends BaseActivity {
 
 
         if (
-                mProgressServiceKeeper != null
+                mProgressServiceKeeper
+                        != null
         ) {
 
             ProgressKeeper.removeTaskCountListener(
@@ -1857,10 +2426,12 @@ public class LauncherActivity extends BaseActivity {
     @Override
     public void onAttachedToWindow() {
 
+        super.onAttachedToWindow();
+
+
         LauncherPreferences
                 .computeNotchSize(
                         this
                 );
     }
 }
-

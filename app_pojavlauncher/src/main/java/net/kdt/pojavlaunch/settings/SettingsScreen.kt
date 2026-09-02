@@ -48,8 +48,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import net.kdt.pojavlaunch.PojavProfile
 import net.kdt.pojavlaunch.LauncherActivity
+import net.kdt.pojavlaunch.BuildConfig
 import net.kdt.pojavlaunch.R
 import net.kdt.pojavlaunch.value.MinecraftAccount
+import androidx.compose.foundation.layout.heightIn
+import net.kdt.pojavlaunch.modpacks.ManagedModpack
+import net.kdt.pojavlaunch.modpacks.ManagedModpackCatalog
+
 
 private val MinecraftFont = FontFamily(
     Font(R.font.minecraft_standard)
@@ -63,12 +68,21 @@ private val SettingsBackground = Color(0xFF0D0D0D)
 
 @Composable
 fun SettingsScreen(
+    selectedTab: SettingsTab,
+    onTabSelected: (SettingsTab) -> Unit,
     onBack: () -> Unit,
-    onAddMicrosoftAccount: () -> Unit
+    onAddMicrosoftAccount: () -> Unit,
+
+    onOpenVideoSettings: () -> Unit,
+    onOpenControlSettings: () -> Unit,
+    onOpenJavaSettings: () -> Unit,
+    onOpenMiscSettings: () -> Unit,
+    onOpenExperimentalSettings: () -> Unit,
+    updateState: PlayUpdateUiState,
+    onCheckForUpdate: () -> Unit,
+    onStartUpdate: () -> Unit,
+    onCompleteUpdate: () -> Unit
 ) {
-    var selectedTab by remember {
-        mutableStateOf(SettingsTab.ACCOUNT)
-    }
 
     Box(
         modifier = Modifier
@@ -77,10 +91,10 @@ fun SettingsScreen(
     ) {
 
         /*
-         * =========================================================
-         * BACKGROUND DO HEADER
-         * =========================================================
-         */
+ * =========================================================
+ * BACKGROUND DO HEADER
+ * =========================================================
+ */
         Image(
             painter = painterResource(
                 R.drawable.bg_settings_art
@@ -92,9 +106,10 @@ fun SettingsScreen(
             contentScale = ContentScale.Crop
         )
 
+
         /*
          * =========================================================
-         * FADE DA IMAGEM PARA #0D0D0D
+         * FADE PARA O FUNDO
          * =========================================================
          */
         Box(
@@ -103,11 +118,9 @@ fun SettingsScreen(
                 .height(170.dp)
                 .background(
                     brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Transparent,
-                            SettingsBackground.copy(alpha = 0.45f),
-                            SettingsBackground
+                        colorStops = arrayOf(
+                            0.00f to SettingsBackground.copy(alpha = 0.70f),
+                            1.00f to SettingsBackground
                         )
                     )
                 )
@@ -135,9 +148,7 @@ fun SettingsScreen(
 
                 SettingsSidebar(
                     selectedTab = selectedTab,
-                    onTabSelected = {
-                        selectedTab = it
-                    },
+                    onTabSelected = onTabSelected,
                     onBack = onBack
                 )
 
@@ -158,13 +169,33 @@ fun SettingsScreen(
                             )
 
                         SettingsTab.LAUNCHER ->
-                            LauncherSettingsScreen()
+                            LauncherSettingsScreen(
+                                onOpenVideoSettings =
+                                    onOpenVideoSettings,
+
+                                onOpenControlSettings =
+                                    onOpenControlSettings,
+
+                                onOpenJavaSettings =
+                                    onOpenJavaSettings,
+
+                                onOpenMiscSettings =
+                                    onOpenMiscSettings,
+
+                                onOpenExperimentalSettings =
+                                    onOpenExperimentalSettings
+                            )
 
                         SettingsTab.MODPACK ->
                             ModpackSettingsScreen()
 
                         SettingsTab.ABOUT ->
-                            AboutSettingsScreen()
+                            AboutSettingsScreen(
+                                updateState = updateState,
+                                onCheckForUpdate = onCheckForUpdate,
+                                onStartUpdate = onStartUpdate,
+                                onCompleteUpdate = onCompleteUpdate
+                            )
                     }
                 }
             }
@@ -301,35 +332,739 @@ private fun SettingsSidebarItem(
     }
 }
 @Composable
-private fun LauncherSettingsScreen() {
-    Text(
-        text = "Launcher",
-        color = Color.White,
-        fontFamily = MinecraftFont,
-        fontSize = 15.sp
-    )
+private fun LauncherSettingsScreen(
+    onOpenVideoSettings: () -> Unit,
+    onOpenControlSettings: () -> Unit,
+    onOpenJavaSettings: () -> Unit,
+    onOpenMiscSettings: () -> Unit,
+    onOpenExperimentalSettings: () -> Unit
+) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(
+                rememberScrollState()
+            )
+    ) {
+
+        Text(
+            text = "Launcher",
+            color = Color.White,
+            fontFamily = MinecraftFont,
+            fontSize = 15.sp
+        )
+
+        Text(
+            text = "Gerencie seu launcher",
+            color = Color(0xFF8D8D8D),
+            fontFamily = MinecraftFont,
+            fontSize = 9.sp
+        )
+
+        Spacer(
+            modifier = Modifier.height(12.dp)
+        )
+
+        LauncherSettingsCard(
+            title = "Vídeo e Renderizador",
+            description = "Resolução e desempenho",
+            onClick = onOpenVideoSettings
+        )
+
+        Spacer(
+            modifier = Modifier.height(8.dp)
+        )
+
+        LauncherSettingsCard(
+            title = "Controles",
+            description = "Gestos, botões e escala",
+            onClick = onOpenControlSettings
+        )
+
+        Spacer(
+            modifier = Modifier.height(8.dp)
+        )
+
+        LauncherSettingsCard(
+            title = "Ajustes do Java",
+            description =
+                "Java Runtimes, argumentos JVM, quantidade de RAM e sandbox",
+            onClick = onOpenJavaSettings
+        )
+
+        Spacer(
+            modifier = Modifier.height(8.dp)
+        )
+
+        LauncherSettingsCard(
+            title = "Configurações diversas",
+            description = "Organize seu jogo",
+            onClick = onOpenMiscSettings
+        )
+
+        Spacer(
+            modifier = Modifier.height(8.dp)
+        )
+
+        LauncherSettingsCard(
+            title = "Opções experimentais",
+            description =
+                "Não fornecemos suporte a essas opções",
+            onClick =
+                onOpenExperimentalSettings
+        )
+    }
+}
+
+@Composable
+private fun LauncherSettingsCard(
+    title: String,
+    description: String,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 54.dp)
+            .clip(
+                RoundedCornerShape(6.dp)
+            )
+            .background(
+                Color(0xFF1C1C1C)
+            )
+            .clickable {
+                onClick()
+            }
+            .padding(
+                horizontal = 14.dp,
+                vertical = 8.dp
+            ),
+        verticalArrangement = Arrangement.Center
+    ) {
+
+        Text(
+            text = title,
+            color = Color.White,
+            fontFamily = MinecraftFont,
+            fontSize = 10.sp,
+            lineHeight = 12.sp
+        )
+
+//        Spacer(
+//            modifier = Modifier.height(2.dp)
+//        )
+
+        Text(
+            text = description,
+            color = Color(0xFF858585),
+            fontFamily = MinecraftFont,
+            fontSize = 8.sp,
+            lineHeight = 10.sp,
+            maxLines = 2
+        )
+    }
 }
 
 @Composable
 private fun ModpackSettingsScreen() {
-    Text(
-        text = "Modpack",
-        color = Color.White,
-        fontFamily = MinecraftFont,
-        fontSize = 15.sp
-    )
-}
 
+    val context = LocalContext.current
+
+    val activity =
+        context as? LauncherActivity
+
+    val modpacks =
+        remember {
+            ManagedModpackCatalog.getPacks()
+        }
+
+    var selectedModpackId by remember {
+        mutableStateOf(
+            activity?.selectedManagedModpackId
+                ?: ManagedModpackCatalog.DEFAULT_PACK_ID
+        )
+    }
+
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(
+                rememberScrollState()
+            )
+    ) {
+
+        Text(
+            text = "Modpack",
+            color = Color.White,
+            fontFamily = MinecraftFont,
+            fontSize = 15.sp
+        )
+
+        Text(
+            text = "Selecione o modpack que deseja jogar",
+            color = Color(0xFF8D8D8D),
+            fontFamily = MinecraftFont,
+            fontSize = 9.sp
+        )
+
+        Spacer(
+            modifier = Modifier.height(12.dp)
+        )
+
+
+        modpacks.forEachIndexed { index, modpack ->
+
+            ModpackOptionCard(
+                modpack = modpack,
+                selected =
+                    selectedModpackId == modpack.id,
+                onClick = {
+
+                    if (
+                        selectedModpackId != modpack.id
+                    ) {
+
+                        selectedModpackId =
+                            modpack.id
+
+                        activity
+                            ?.selectManagedModpackFromCompose(
+                                modpack.id
+                            )
+                    }
+                }
+            )
+
+
+            if (
+                index < modpacks.lastIndex
+            ) {
+
+                Spacer(
+                    modifier =
+                        Modifier.height(12.dp)
+                )
+            }
+        }
+    }
+}
 @Composable
-private fun AboutSettingsScreen() {
-    Text(
-        text = "Sobre",
-        color = Color.White,
-        fontFamily = MinecraftFont,
-        fontSize = 15.sp
-    )
-}
+private fun ModpackOptionCard(
+    modpack: ManagedModpack,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
 
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(
+                RoundedCornerShape(8.dp)
+            )
+            .background(
+                Color(0xFF1C1C1C)
+            )
+            .then(
+                if (selected) {
+
+                    Modifier.border(
+                        width = 1.dp,
+                        color = Color(0xFF54E2B0),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+
+                } else {
+
+                    Modifier
+                }
+            )
+            .padding(
+                horizontal = 14.dp,
+                vertical = 12.dp
+            ),
+        verticalAlignment =
+            Alignment.CenterVertically
+    ) {
+
+        Column(
+            modifier =
+                Modifier.weight(1f)
+        ) {
+
+            Text(
+                text =
+                    modpack.name,
+                color =
+                    Color.White,
+                fontFamily =
+                    MinecraftFont,
+                fontSize =
+                    9.sp
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.height(4.dp)
+            )
+
+            Text(
+                text =
+                    "MINECRAFT ${modpack.minecraftVersion}",
+                color =
+                    Color(0xFF8A8A8A),
+                fontFamily =
+                    MinecraftFont,
+                fontSize =
+                    7.sp
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.height(2.dp)
+            )
+
+            Text(
+                text =
+                    "VERSÃO DO MODPACK: ${modpack.modpackVersion}",
+                color =
+                    Color(0xFF8A8A8A),
+                fontFamily =
+                    MinecraftFont,
+                fontSize =
+                    7.sp
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.height(4.dp)
+            )
+
+            Text(
+                text =
+                    modpack.description,
+                color =
+                    Color.White,
+                fontFamily =
+                    MinecraftFont,
+                fontSize =
+                    8.sp
+            )
+        }
+
+
+        Spacer(
+            modifier =
+                Modifier.width(12.dp)
+        )
+
+
+        Box(
+            modifier = Modifier
+                .width(124.dp)
+                .height(36.dp)
+                .clip(
+                    RoundedCornerShape(6.dp)
+                )
+                .background(
+                    if (selected) {
+
+                        Color(0xFF8B8B8B)
+
+                    } else {
+
+                        Color(0xFF7B2FD3)
+                    }
+                )
+                .clickable(
+                    enabled = !selected
+                ) {
+
+                    onClick()
+                },
+            contentAlignment =
+                Alignment.Center
+        ) {
+
+            Text(
+                text =
+                    if (selected) {
+                        "Selecionado"
+                    } else {
+                        "Selecionar"
+                    },
+                color =
+                    Color.White,
+                fontFamily =
+                    MinecraftFont,
+                fontSize =
+                    9.sp
+            )
+        }
+    }
+}
+@Composable
+private fun AboutSettingsScreen(
+    updateState: PlayUpdateUiState,
+    onCheckForUpdate: () -> Unit,
+    onStartUpdate: () -> Unit,
+    onCompleteUpdate: () -> Unit
+) {
+
+    LaunchedEffect(Unit) {
+        if (updateState.status == PlayUpdateStatus.IDLE) {
+            onCheckForUpdate()
+        }
+    }
+
+    val statusText = when (updateState.status) {
+        PlayUpdateStatus.IDLE -> "Verificação pendente"
+        PlayUpdateStatus.CHECKING -> "Verificando atualização"
+        PlayUpdateStatus.UP_TO_DATE -> "Versão atualizada"
+        PlayUpdateStatus.AVAILABLE -> "Atualização disponível"
+        PlayUpdateStatus.DOWNLOADING -> "Baixando atualização"
+        PlayUpdateStatus.READY_TO_INSTALL -> "Pronta para instalar"
+        PlayUpdateStatus.ERROR -> "Não foi possível verificar"
+    }
+
+    val statusColor = when (updateState.status) {
+        PlayUpdateStatus.AVAILABLE,
+        PlayUpdateStatus.READY_TO_INSTALL -> Color(0xFFFFC107)
+        PlayUpdateStatus.ERROR -> Color(0xFFE57373)
+        else -> Color(0xFF79D800)
+    }
+
+    val buttonText = when (updateState.status) {
+        PlayUpdateStatus.CHECKING -> "VERIFICANDO..."
+        PlayUpdateStatus.AVAILABLE -> "ATUALIZAR AGORA"
+        PlayUpdateStatus.DOWNLOADING -> updateState.progressPercent?.let { "BAIXANDO $it%" }
+            ?: "BAIXANDO..."
+        PlayUpdateStatus.READY_TO_INSTALL -> "REINICIAR E INSTALAR"
+        else -> "CHECAR ATUALIZAÇÃO"
+    }
+
+    val onUpdateClick = when (updateState.status) {
+        PlayUpdateStatus.AVAILABLE -> onStartUpdate
+        PlayUpdateStatus.READY_TO_INSTALL -> onCompleteUpdate
+        PlayUpdateStatus.CHECKING,
+        PlayUpdateStatus.DOWNLOADING -> ({})
+        else -> onCheckForUpdate
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(
+                rememberScrollState()
+            )
+    ) {
+
+        /*
+         * =========================================================
+         * CABEÇALHO
+         * =========================================================
+         */
+
+        Text(
+            text = "Sobre",
+            color = Color.White,
+            fontFamily = MinecraftFont,
+            fontSize = 15.sp
+        )
+
+        Text(
+            text = "Sobre o Launcher",
+            color = Color(0xFF777777),
+            fontFamily = MinecraftFont,
+            fontSize = 9.sp
+        )
+
+        Spacer(
+            modifier = Modifier.height(12.dp)
+        )
+
+        /*
+         * =========================================================
+         * CARD DO LAUNCHER
+         * =========================================================
+         */
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(98.dp)
+                .clip(
+                    RoundedCornerShape(8.dp)
+                )
+                .background(
+                    Color(0xFF202020)
+                )
+                .padding(
+                    horizontal = 30.dp,
+                    vertical = 18.dp
+                )
+        ) {
+
+            /*
+             * Nome do launcher
+             */
+            Row(
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+
+                Image(
+                    painter = painterResource(
+                        R.drawable.ic_launcher_foreground
+                    ),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .width(27.dp)
+                        .height(27.dp)
+                )
+
+                Spacer(
+                    modifier =
+                        Modifier.width(8.dp)
+                )
+
+                Text(
+                    text =
+                        "COBBLEMON ONLINE LAUNCHER",
+                    color = Color.White,
+                    fontFamily =
+                        MinecraftFont,
+                    fontSize = 9.sp
+                )
+            }
+
+            Spacer(
+                modifier =
+                    Modifier.weight(1f)
+            )
+
+            /*
+             * Versão + botão
+             */
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+                verticalAlignment =
+                    Alignment.CenterVertically
+            ) {
+
+                /*
+                 * Status da versão
+                 */
+                Row(
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+
+                    /*
+                     * Círculo verde
+                     */
+                    Image(
+                        painter = painterResource(
+                            R.drawable.ic_check
+                        ),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .width(27.dp)
+                            .height(27.dp)
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(8.dp)
+                    )
+
+                    Text(
+                        text =
+                            statusText,
+                        color =
+                            statusColor,
+                        fontFamily =
+                            MinecraftFont,
+                        fontSize = 9.sp
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(7.dp)
+                    )
+
+                    Text(
+                        text = BuildConfig.VERSION_NAME,
+                        color = Color.White,
+                        fontFamily =
+                            MinecraftFont,
+                        fontSize = 9.sp
+                    )
+                }
+
+                Spacer(
+                    modifier =
+                        Modifier.weight(1f)
+                )
+
+                /*
+                 * Botão atualizar
+                 */
+                Box(
+                    modifier = Modifier
+                        .width(180.dp)
+                        .height(25.dp)
+                        .background(
+                            Color(0xFF858585)
+                        )
+                        .border(
+                            width = 1.dp,
+                            color =
+                                Color(0xFFA7A7A7)
+                        )
+                        .clickable(onClick = onUpdateClick),
+                    contentAlignment =
+                        Alignment.Center
+                ) {
+
+                    Text(
+                        text =
+                            buttonText,
+                        color = Color.White,
+                        fontFamily =
+                            MinecraftFont,
+                        fontSize = 7.sp
+                    )
+                }
+            }
+        }
+
+        Spacer(
+            modifier =
+                Modifier.height(12.dp)
+        )
+
+        /*
+         * =========================================================
+         * RELEASE NOTES
+         * =========================================================
+         */
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(
+                    RoundedCornerShape(8.dp)
+                )
+                .background(
+                    Color(0xFF1D1D1D)
+                )
+                .padding(
+                    start = 30.dp,
+                    end = 30.dp,
+                    top = 12.dp,
+                    bottom = 20.dp
+                )
+        ) {
+
+            Text(
+                text =
+                    "Notas de atualização",
+                color = Color.White,
+                fontFamily =
+                    MinecraftFont,
+                fontSize = 19.sp
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.height(14.dp)
+            )
+
+            /*
+             * Tag da versão
+             */
+            Box(
+                modifier = Modifier
+                    .background(
+                        Color(0xFF853AC7)
+                    )
+                    .padding(
+                        horizontal = 6.dp,
+                        vertical = 4.dp
+                    )
+            ) {
+
+                Text(
+                    text =
+                    "ATUALIZAÇÕES PELA GOOGLE PLAY",
+                    color =
+                        Color(0xFFE4D5F2),
+                    fontFamily =
+                        MinecraftFont,
+                    fontSize = 6.sp
+                )
+            }
+
+            Spacer(
+                modifier =
+                    Modifier.height(9.dp)
+            )
+
+            /*
+             * Desempenho
+             */
+            AboutReleaseSection(
+                title = "Status",
+                description = updateState.message
+                    ?: "A Google Play mantém o launcher atualizado automaticamente."
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.height(4.dp)
+            )
+
+            /*
+             * Segurança
+             */
+            AboutReleaseSection(
+                title = "Novidades",
+                description =
+                    "Consulte as novidades e o histórico da versão na página do launcher na Google Play."
+            )
+        }
+    }
+}
+@Composable
+private fun AboutReleaseSection(
+    title: String,
+    description: String
+) {
+
+    Column {
+
+        Text(
+            text = title,
+            color = Color.White,
+            fontFamily =
+                MinecraftFont,
+            fontSize = 11.sp,
+            lineHeight = 13.sp
+        )
+
+        Text(
+            text = description,
+            color = Color(0xFF8A8A8A),
+            fontFamily =
+                MinecraftFont,
+            fontSize = 9.sp,
+            lineHeight = 11.sp
+        )
+    }
+}
 
 @Composable
 private fun AccountSettingsScreen(

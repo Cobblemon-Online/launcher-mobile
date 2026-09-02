@@ -190,8 +190,8 @@ private fun SettingsHomeButton(
 
     Box(
         modifier = modifier
-            .width(147.dp)
-            .height(40.dp)
+            .width(189.dp)
+            .height(51.dp)
             .clickable(
                 interactionSource =
                     interactionSource,
@@ -243,7 +243,7 @@ private fun SettingsHomeButton(
                 color = Color.White,
                 fontFamily =
                     HomeMinecraftFont,
-                fontSize = 8.sp
+                fontSize = 10.sp
             )
         }
 
@@ -278,8 +278,8 @@ private fun PlayHomeButton(
 
     Box(
         modifier = modifier
-            .width(149.dp)
-            .height(46.dp)
+            .width(193.dp)
+            .height(59.dp)
             .clickable(
                 enabled = enabled,
                 interactionSource =
@@ -309,8 +309,8 @@ private fun PlayHomeButton(
          */
         Box(
             modifier = Modifier
-                .width(135.dp)
-                .height(32.dp)
+                .width(174.dp)
+                .height(41.dp)
                 .offset(y = (-1).dp)
                 .clipToBounds(),
             contentAlignment = Alignment.Center
@@ -333,8 +333,8 @@ private fun PlayHomeButton(
                     }
                 },
                 modifier = Modifier
-                    .requiredSize(149.dp)
-                    .offset(y = 17.dp)
+                    .requiredSize(193.dp)
+                    .offset(y = 20.dp)
                     .alpha(0.6f)
             )
         }
@@ -371,7 +371,7 @@ private fun PlayHomeButton(
             color = Color.White,
             fontFamily =
                 HomeMinecraftBoldFont,
-            fontSize = 13.sp,
+            fontSize = 17.sp,
             modifier =
                 Modifier.offset(
                     y = (-1).dp
@@ -416,7 +416,7 @@ private fun PlayerHeader(
             fontFamily =
                 HomeMinecraftBoldFont,
             fontSize =
-                7.sp,
+                9.sp,
             letterSpacing =
                 0.57.em,
             maxLines =
@@ -464,7 +464,7 @@ private fun HomeBottomBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(35.dp)
+            .height(45.dp)
             .background(
                 Color(0xBF342364),
                 RectangleShape
@@ -569,13 +569,19 @@ private fun SocialButton(
     onClick: () -> Unit
 ) {
 
+    val resources = LocalContext.current.resources
+    val iconBitmap = remember(icon) {
+        requireNotNull(BitmapFactory.decodeResource(resources, icon)) {
+            "Não foi possível decodificar o ícone social: $description"
+        }.asImageBitmap()
+    }
+
     Image(
-        painter =
-            painterResource(icon),
+        bitmap = iconBitmap,
         contentDescription =
             description,
         modifier = Modifier
-            .size(18.dp)
+            .size(23.dp)
             .clickable(
                 onClick = onClick
             ),
