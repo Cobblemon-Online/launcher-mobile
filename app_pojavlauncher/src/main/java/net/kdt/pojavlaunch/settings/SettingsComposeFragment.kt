@@ -23,11 +23,8 @@ import com.google.android.play.core.install.model.UpdateAvailability
 import net.kdt.pojavlaunch.LauncherActivity
 import net.kdt.pojavlaunch.Tools
 import net.kdt.pojavlaunch.fragments.MicrosoftLoginFragment
-import net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceVideoFragment
-import net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceControlFragment
-import net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceJavaFragment
-import net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceMiscellaneousFragment
-import net.kdt.pojavlaunch.prefs.screens.LauncherPreferenceExperimentalFragment
+import net.kdt.pojavlaunch.contracts.OpenDocumentWithExtension
+import net.kdt.pojavlaunch.multirt.MultiRTConfigDialog
 
 enum class PlayUpdateStatus {
     IDLE,
@@ -107,6 +104,21 @@ class SettingsComposeFragment : Fragment() {
             else -> updateState
         }
     }
+
+    private var multiRtDialog: MultiRTConfigDialog? = null
+
+    private val vmInstallLauncher =
+        registerForActivityResult(
+            OpenDocumentWithExtension("xz")
+        ) { data ->
+
+            if (data != null) {
+                Tools.installRuntimeFromUri(
+                    requireContext(),
+                    data
+                )
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -197,6 +209,23 @@ class SettingsComposeFragment : Fragment() {
         appUpdateManager.completeUpdate()
     }
 
+    private fun openRuntimeManager() {
+
+        val dialog =
+            multiRtDialog
+                ?: MultiRTConfigDialog().also {
+
+                    it.prepare(
+                        requireContext(),
+                        vmInstallLauncher
+                    )
+
+                    multiRtDialog = it
+                }
+
+        dialog.show()
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -231,56 +260,8 @@ class SettingsComposeFragment : Fragment() {
                         )
                     },
 
-                    onOpenVideoSettings = {
-
-                        Tools.swapFragment(
-                            requireActivity(),
-                            LauncherPreferenceVideoFragment::class.java,
-                            "VIDEO_SETTINGS",
-                            null
-                        )
-                    },
-
-                    onOpenControlSettings = {
-
-                        Tools.swapFragment(
-                            requireActivity(),
-                            LauncherPreferenceControlFragment::class.java,
-                            "CONTROL_SETTINGS",
-                            null
-                        )
-                    },
-
-                    onOpenJavaSettings = {
-
-                        Tools.swapFragment(
-                            requireActivity(),
-                            LauncherPreferenceJavaFragment::class.java,
-                            "JAVA_SETTINGS",
-                            null
-                        )
-                    },
-
-                    onOpenMiscSettings = {
-
-                        Tools.swapFragment(
-                            requireActivity(),
-                            LauncherPreferenceMiscellaneousFragment::class.java,
-                            "MISC_SETTINGS",
-                            null
-                        )
-                    },
-
-                    onOpenExperimentalSettings = {
-
-                        Tools.swapFragment(
-                            requireActivity(),
-                            LauncherPreferenceExperimentalFragment::class.java,
-                            "EXPERIMENTAL_SETTINGS",
-                            null
-                        )
-                    },
-
+                    onOpenRuntimeManager =
+                        ::openRuntimeManager,
                     updateState = updateState,
                     onCheckForUpdate = ::checkForUpdate,
                     onStartUpdate = ::startFlexibleUpdate,

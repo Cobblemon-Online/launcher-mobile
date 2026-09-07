@@ -26,6 +26,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.kdt.pojavlaunch.R
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 
 @Composable
 fun SettingsScreen(
@@ -33,17 +37,32 @@ fun SettingsScreen(
     onTabSelected: (SettingsTab) -> Unit,
     onBack: () -> Unit,
     onAddMicrosoftAccount: () -> Unit,
-
-    onOpenVideoSettings: () -> Unit,
-    onOpenControlSettings: () -> Unit,
-    onOpenJavaSettings: () -> Unit,
-    onOpenMiscSettings: () -> Unit,
-    onOpenExperimentalSettings: () -> Unit,
+    onOpenRuntimeManager: () -> Unit,
     updateState: PlayUpdateUiState,
     onCheckForUpdate: () -> Unit,
     onStartUpdate: () -> Unit,
     onCompleteUpdate: () -> Unit
 ) {
+    var launcherPage by rememberSaveable {
+        mutableStateOf(
+            LauncherSettingsPage.MAIN
+        )
+    }
+    val handleBack: () -> Unit = {
+
+        if (
+            selectedTab == SettingsTab.LAUNCHER &&
+            launcherPage != LauncherSettingsPage.MAIN
+        ) {
+
+            launcherPage =
+                LauncherSettingsPage.MAIN
+
+        } else {
+
+            onBack()
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -109,8 +128,18 @@ fun SettingsScreen(
 
                 SettingsSidebar(
                     selectedTab = selectedTab,
-                    onTabSelected = onTabSelected,
-                    onBack = onBack
+
+                    onTabSelected = { tab ->
+
+                        if (tab != SettingsTab.LAUNCHER) {
+                            launcherPage =
+                                LauncherSettingsPage.MAIN
+                        }
+
+                        onTabSelected(tab)
+                    },
+
+                    onBack = handleBack
                 )
 
                 Spacer(
@@ -131,20 +160,15 @@ fun SettingsScreen(
 
                         SettingsTab.LAUNCHER ->
                             LauncherSettingsScreen(
-                                onOpenVideoSettings =
-                                    onOpenVideoSettings,
+                                currentPage =
+                                    launcherPage,
 
-                                onOpenControlSettings =
-                                    onOpenControlSettings,
+                                onPageChange = {
+                                    launcherPage = it
+                                },
 
-                                onOpenJavaSettings =
-                                    onOpenJavaSettings,
-
-                                onOpenMiscSettings =
-                                    onOpenMiscSettings,
-
-                                onOpenExperimentalSettings =
-                                    onOpenExperimentalSettings
+                                onOpenRuntimeManager =
+                                    onOpenRuntimeManager
                             )
 
                         SettingsTab.MODPACK ->
