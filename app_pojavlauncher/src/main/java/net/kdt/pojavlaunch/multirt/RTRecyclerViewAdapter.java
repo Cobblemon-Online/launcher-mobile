@@ -38,13 +38,13 @@ public class RTRecyclerViewAdapter extends RecyclerView.Adapter<RTRecyclerViewAd
 
     @Override
     public void onBindViewHolder(@NonNull RTViewHolder holder, int position) {
-        final List<Runtime> runtimes = MultiRTUtils.getRuntimes();
+        final List<Runtime> runtimes = MultiRTUtils.getInstalledRuntimes();
         holder.bindRuntime(runtimes.get(position),position);
     }
 
     @Override
     public int getItemCount() {
-        return MultiRTUtils.getRuntimes().size();
+        return MultiRTUtils.getInstalledRuntimes().size();
     }
 
     public boolean isDefaultRuntime(Runtime rt) {
@@ -104,7 +104,7 @@ public class RTRecyclerViewAdapter extends RecyclerView.Adapter<RTRecyclerViewAd
             mDeleteButton.setOnClickListener(v -> {
                 if (mCurrentRuntime == null) return;
 
-                if(MultiRTUtils.getRuntimes().size() < 2) {
+                if(MultiRTUtils.getInstalledRuntimes().size() < 2) {
                     new AlertDialog.Builder(mContext)
                             .setTitle(R.string.global_error)
                             .setMessage(R.string.multirt_config_removeerror_last)

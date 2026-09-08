@@ -43,6 +43,7 @@ import net.kdt.pojavlaunch.modpacks.ManagedModpack;
 import net.kdt.pojavlaunch.modpacks.ManagedModpackCatalog;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.progresskeeper.ProgressKeeper;
+import net.kdt.pojavlaunch.progresskeeper.ProgressListener;
 import net.kdt.pojavlaunch.progresskeeper.TaskCountListener;
 import net.kdt.pojavlaunch.services.ProgressServiceKeeper;
 import net.kdt.pojavlaunch.settings.SettingsComposeFragment;
@@ -261,7 +262,69 @@ public class LauncherActivity extends BaseActivity {
                         }
                 );
             };
+    private final ProgressListener mComposeProgressListener =
+            new ProgressListener() {
 
+                @Override
+                public void onProgressStarted() {
+
+                    Tools.runOnUiThread(
+                            () -> setLoadingProgress(
+                                    0f
+                            )
+                    );
+                }
+
+
+                @Override
+                public void onProgressUpdated(
+                        int progress,
+                        int resid,
+                        Object... va
+                ) {
+
+                    /*
+                     * Alguns processos podem usar -1
+                     * quando não existe progresso numérico.
+                     */
+                    if (
+                            progress < 0
+                    ) {
+
+                        return;
+                    }
+
+
+                    float normalizedProgress =
+                            Math.max(
+                                    0f,
+                                    Math.min(
+                                            progress / 100f,
+                                            1f
+                                    )
+                            );
+
+
+                    Tools.runOnUiThread(
+                            () -> setLoadingProgress(
+                                    normalizedProgress
+                            )
+                    );
+                }
+
+
+                @Override
+                public void onProgressEnded() {
+
+                    /*
+                     * Não zeramos aqui.
+                     *
+                     * Outra etapa pode começar logo depois.
+                     * setLoading(false) cuidará do reset
+                     * quando todo o carregamento terminar.
+                     */
+                }
+            };
 
     // =========================================================
     // BaseActivity
@@ -280,7 +343,7 @@ public class LauncherActivity extends BaseActivity {
     @Override
     public boolean setFullscreen() {
 
-        return false;
+        return true;
     }
 
 
@@ -1835,7 +1898,32 @@ public class LauncherActivity extends BaseActivity {
         mProgressLayout.observe(
                 ProgressLayout.DOWNLOAD_VERSION_LIST
         );
+        ProgressKeeper.addListener(
+                ProgressLayout.DOWNLOAD_MINECRAFT,
+                mComposeProgressListener
+        );
+
+        ProgressKeeper.addListener(
+                ProgressLayout.UNPACK_RUNTIME,
+                mComposeProgressListener
+        );
+
+        ProgressKeeper.addListener(
+                ProgressLayout.INSTALL_MODPACK,
+                mComposeProgressListener
+        );
+
+        ProgressKeeper.addListener(
+                ProgressLayout.AUTHENTICATE_MICROSOFT,
+                mComposeProgressListener
+        );
+
+        ProgressKeeper.addListener(
+                ProgressLayout.DOWNLOAD_VERSION_LIST,
+                mComposeProgressListener
+        );
     }
+
 
 
     // =========================================================
@@ -2452,7 +2540,30 @@ public class LauncherActivity extends BaseActivity {
                 ExtraConstants.LAUNCH_GAME,
                 mLaunchGameListener
         );
+        ProgressKeeper.removeListener(
+                ProgressLayout.DOWNLOAD_MINECRAFT,
+                mComposeProgressListener
+        );
 
+        ProgressKeeper.removeListener(
+                ProgressLayout.UNPACK_RUNTIME,
+                mComposeProgressListener
+        );
+
+        ProgressKeeper.removeListener(
+                ProgressLayout.INSTALL_MODPACK,
+                mComposeProgressListener
+        );
+
+        ProgressKeeper.removeListener(
+                ProgressLayout.AUTHENTICATE_MICROSOFT,
+                mComposeProgressListener
+        );
+
+        ProgressKeeper.removeListener(
+                ProgressLayout.DOWNLOAD_VERSION_LIST,
+                mComposeProgressListener
+        );
 
         super.onDestroy();
     }
@@ -2494,4 +2605,5 @@ public class LauncherActivity extends BaseActivity {
                         this
                 );
     }
+
 }

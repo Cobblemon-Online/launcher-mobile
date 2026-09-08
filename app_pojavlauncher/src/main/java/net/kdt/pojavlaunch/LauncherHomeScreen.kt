@@ -612,15 +612,28 @@ private fun LoadingBottomBar(
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .clipToBounds()
     ) {
 
         /*
-         * =====================================
-         * FUNDO DA BARRA
-         * =====================================
+         * GIF com 2x a altura da barra.
          *
-         * Ocupa 100% da barra inferior.
+         * Barra = 45dp
+         * GIF   = 90dp
+         */
+        val gifSize =
+            maxHeight * 2f
+
+        /*
+         * Espaço que o GIF pode percorrer
+         * sem ultrapassar a lateral direita.
+         */
+        val movementWidth =
+            maxWidth - gifSize
+
+        /*
+         * =====================================
+         * FUNDO
+         * =====================================
          */
         Box(
             modifier = Modifier
@@ -632,20 +645,20 @@ private fun LoadingBottomBar(
 
         /*
          * =====================================
-         * PREENCHIMENTO
+         * PARTE PREENCHIDA
          * =====================================
          *
-         * Ocupa toda a ALTURA.
-         * A largura depende do progresso.
+         * Termina onde o GIF começa.
          */
         Box(
             modifier = Modifier
                 .fillMaxHeight()
                 .width(
-                    maxWidth * safeProgress
+                    movementWidth *
+                            safeProgress
                 )
                 .background(
-                    Color.White
+                    Color(0xFF5B2E9E)
                 )
         )
 
@@ -653,9 +666,6 @@ private fun LoadingBottomBar(
          * =====================================
          * GIF
          * =====================================
-         *
-         * É quadrado e tem exatamente
-         * a altura da barra.
          */
         AndroidView(
             factory = { context ->
@@ -675,48 +685,30 @@ private fun LoadingBottomBar(
             },
 
             modifier = Modifier
-                .size(
-                    maxHeight
+                .requiredSize(
+                    gifSize
                 )
                 .align(
                     Alignment.CenterStart
                 )
+                .offset(
+                    y = (-15).dp
+                )
                 .offset {
 
-                    /*
-                     * O GIF fica centralizado na
-                     * extremidade do progresso.
-                     *
-                     * Nas pontas ele é limitado para
-                     * nunca sair da barra.
-                     */
                     val gifSizePx =
-                        constraints.maxHeight
+                        constraints.maxHeight * 2
 
-                    val progressPosition =
-                        constraints.maxWidth *
-                                safeProgress
-
-                    val wantedX =
-                        progressPosition -
-                                (
-                                        gifSizePx / 2f
-                                        )
-
-                    val maxX =
+                    val movementWidthPx =
                         constraints.maxWidth -
                                 gifSizePx
 
-                    val finalX =
-                        wantedX
-                            .coerceIn(
-                                0f,
-                                maxX.toFloat()
-                            )
-
                     IntOffset(
                         x =
-                            finalX
+                            (
+                                    movementWidthPx *
+                                            safeProgress
+                                    )
                                 .roundToInt(),
                         y = 0
                     )
