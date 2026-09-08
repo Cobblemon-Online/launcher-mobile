@@ -10,8 +10,10 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,6 +45,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -53,6 +56,7 @@ import pl.droidsonroids.gif.GifDrawable
 import pl.droidsonroids.gif.GifImageView
 import java.net.HttpURLConnection
 import java.net.URL
+import kotlin.math.roundToInt
 
 private val HomeMinecraftFont =
     FontFamily(
@@ -63,15 +67,15 @@ private val HomeMinecraftBoldFont =
     FontFamily(
         Font(R.font.minecraft_standard_bold)
     )
-
 @Composable
 fun LauncherHomeScreen(
     loading: Boolean,
+    loadingProgress: Float,
     accountRefreshKey: Int,
     onPlay: () -> Unit,
     onSettings: () -> Unit,
     onSocial: (Int) -> Unit
-) {
+){
 
     val username =
         rememberCurrentUsername(
@@ -168,6 +172,7 @@ fun LauncherHomeScreen(
                         Alignment.BottomCenter
                     ),
                 loading = loading,
+                loadingProgress = loadingProgress,
                 onSocial = onSocial
             )
         }
@@ -458,6 +463,7 @@ private fun PlayerHeader(
 private fun HomeBottomBar(
     modifier: Modifier = Modifier,
     loading: Boolean,
+    loadingProgress: Float,
     onSocial: (Int) -> Unit
 ) {
 
@@ -475,7 +481,9 @@ private fun HomeBottomBar(
 
         if (loading) {
 
-            LoadingBottomBar()
+            LoadingBottomBar(
+                progress = loadingProgress
+            )
 
         } else {
 
@@ -591,44 +599,129 @@ private fun SocialButton(
 }
 
 @Composable
-private fun LoadingBottomBar() {
+private fun LoadingBottomBar(
+    progress: Float
+) {
 
-    Box(
+    val safeProgress =
+        progress.coerceIn(
+            0f,
+            1f
+        )
+
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .padding(
-                horizontal = 12.dp
-            ),
-        contentAlignment =
-            Alignment.Center
+            .clipToBounds()
     ) {
 
-        androidx.compose.foundation.layout.Column(
-            modifier =
-                Modifier.fillMaxWidth(),
-            horizontalAlignment =
-                Alignment.CenterHorizontally
-        ) {
+        /*
+         * =====================================
+         * FUNDO DA BARRA
+         * =====================================
+         *
+         * Ocupa 100% da barra inferior.
+         */
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Color(0x66000000)
+                )
+        )
 
-            Text(
-                text = "Carregando...",
-                color = Color.White,
-                fontFamily =
-                    HomeMinecraftFont,
-                fontSize = 7.sp
-            )
+        /*
+         * =====================================
+         * PREENCHIMENTO
+         * =====================================
+         *
+         * Ocupa toda a ALTURA.
+         * A largura depende do progresso.
+         */
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(
+                    maxWidth * safeProgress
+                )
+                .background(
+                    Color.White
+                )
+        )
 
-            Spacer(
-                modifier =
-                    Modifier.height(2.dp)
-            )
+        /*
+         * =====================================
+         * GIF
+         * =====================================
+         *
+         * É quadrado e tem exatamente
+         * a altura da barra.
+         */
+        AndroidView(
+            factory = { context ->
 
-            LinearProgressIndicator(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-            )
-        }
+                GifImageView(context).apply {
+
+                    scaleType =
+                        ImageView.ScaleType.FIT_CENTER
+
+                    setImageResource(
+                        R.drawable.loading_gif
+                    )
+
+                    (drawable as? GifDrawable)
+                        ?.setFilterBitmap(false)
+                }
+            },
+
+            modifier = Modifier
+                .size(
+                    maxHeight
+                )
+                .align(
+                    Alignment.CenterStart
+                )
+                .offset {
+
+                    /*
+                     * O GIF fica centralizado na
+                     * extremidade do progresso.
+                     *
+                     * Nas pontas ele é limitado para
+                     * nunca sair da barra.
+                     */
+                    val gifSizePx =
+                        constraints.maxHeight
+
+                    val progressPosition =
+                        constraints.maxWidth *
+                                safeProgress
+
+                    val wantedX =
+                        progressPosition -
+                                (
+                                        gifSizePx / 2f
+                                        )
+
+                    val maxX =
+                        constraints.maxWidth -
+                                gifSizePx
+
+                    val finalX =
+                        wantedX
+                            .coerceIn(
+                                0f,
+                                maxX.toFloat()
+                            )
+
+                    IntOffset(
+                        x =
+                            finalX
+                                .roundToInt(),
+                        y = 0
+                    )
+                }
+        )
     }
 }
 

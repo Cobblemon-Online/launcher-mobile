@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
@@ -14,6 +15,9 @@ class LauncherHomeComposeFragment : Fragment() {
 
     private var loadingState =
         mutableStateOf(false)
+
+    private var loadingProgress =
+        mutableFloatStateOf(0f)
 
     private var accountRefreshKey =
         mutableIntStateOf(0)
@@ -30,6 +34,9 @@ class LauncherHomeComposeFragment : Fragment() {
         loadingState.value =
             launcherActivity.isLauncherLoading()
 
+        loadingProgress.floatValue =
+            launcherActivity.getLauncherLoadingProgress()
+
         return ComposeView(requireContext()).apply {
 
             setViewCompositionStrategy(
@@ -40,6 +47,7 @@ class LauncherHomeComposeFragment : Fragment() {
 
                 LauncherHomeScreen(
                     loading = loadingState.value,
+                    loadingProgress = loadingProgress.floatValue,
                     accountRefreshKey = accountRefreshKey.intValue,
 
                     onPlay = {
@@ -64,6 +72,20 @@ class LauncherHomeComposeFragment : Fragment() {
         loading: Boolean
     ) {
         loadingState.value = loading
+
+        if (!loading) {
+            loadingProgress.floatValue = 0f
+        }
+    }
+
+    fun setLoadingProgress(
+        progress: Float
+    ) {
+        loadingProgress.floatValue =
+            progress.coerceIn(
+                0f,
+                1f
+            )
     }
 
     fun refreshAccount() {

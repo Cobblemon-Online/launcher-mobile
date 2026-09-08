@@ -127,7 +127,8 @@ public class LauncherActivity extends BaseActivity {
     private boolean mLauncherLoading =
             false;
 
-
+    private float mLauncherLoadingProgress =
+            0f;
     // =========================================================
     // Views legadas
     // =========================================================
@@ -435,6 +436,10 @@ public class LauncherActivity extends BaseActivity {
         return mLauncherLoading;
     }
 
+    public float getLauncherLoadingProgress() {
+
+        return mLauncherLoadingProgress;
+    }
 
     public void deleteAccountFromCompose(
             String username
@@ -804,6 +809,15 @@ public class LauncherActivity extends BaseActivity {
                 loading;
 
 
+        if (
+                !loading
+        ) {
+
+            mLauncherLoadingProgress =
+                    0f;
+        }
+
+
         Fragment fragment =
                 getSupportFragmentManager()
                         .findFragmentById(
@@ -825,10 +839,56 @@ public class LauncherActivity extends BaseActivity {
             homeFragment.setLoadingState(
                     loading
             );
+
+
+            if (
+                    !loading
+            ) {
+
+                homeFragment.setLoadingProgress(
+                        0f
+                );
+            }
         }
     }
 
+    private void setLoadingProgress(
+            float progress
+    ) {
 
+        mLauncherLoadingProgress =
+                Math.max(
+                        0f,
+                        Math.min(
+                                progress,
+                                1f
+                        )
+                );
+
+
+        Fragment fragment =
+                getSupportFragmentManager()
+                        .findFragmentById(
+                                R.id.container_fragment
+                        );
+
+
+        if (
+                fragment
+                        instanceof LauncherHomeComposeFragment
+        ) {
+
+            LauncherHomeComposeFragment
+                    homeFragment =
+                    (LauncherHomeComposeFragment)
+                            fragment;
+
+
+            homeFragment.setLoadingProgress(
+                    mLauncherLoadingProgress
+            );
+        }
+    }
     // =========================================================
     // Conta
     // =========================================================
