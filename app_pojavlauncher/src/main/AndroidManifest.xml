@@ -42,7 +42,20 @@
         <meta-data
             android:name="android.max_aspect"
             android:value="ratio_float" />
+        <activity
+            android:name=".ui.LoginActivity"
+            android:screenOrientation="portrait"
+            android:exported="true" />
 
+        <activity
+            android:name=".ui.MicrosoftLoginActivity"
+            android:screenOrientation="portrait"
+            android:exported="false" />
+
+        <activity
+            android:name=".ui.OfflineLoginActivity"
+            android:screenOrientation="portrait"
+            android:exported="false" />
         <activity
             android:name=".TestStorageActivity"
             android:exported="true"
@@ -113,9 +126,6 @@
             android:process=":game"
             android:screenOrientation="sensorLandscape" />
 
-        <activity
-            android:name=".ui.LauncherActivity"
-            android:exported="false" />
 
         <provider
             android:name=".scoped.FolderProvider"

@@ -82,7 +82,7 @@ public class TestStorageActivity extends Activity {
 
             intent = new Intent(
                     this,
-                    net.kdt.pojavlaunch.ui.LauncherActivity.class
+                    net.kdt.pojavlaunch.ui.LoginActivity.class
             );
         } else {
             Log.d(

@@ -511,6 +511,21 @@ public class LauncherActivity extends BaseActivity {
         mAccountSpinner.removeAccount(
                 username
         );
+
+
+        if (
+                PojavProfile
+                        .getAllProfiles()
+                        .isEmpty()
+        ) {
+
+            showAccountSelector();
+
+            return;
+        }
+
+
+        refreshAccountSelection();
     }
 
 
@@ -2060,33 +2075,13 @@ public class LauncherActivity extends BaseActivity {
         }
 
 
-        // =========================================
-        // Conta
-        // =========================================
-
         if (
                 mAccountSpinner
                         .getSelectedAccount()
                         == null
         ) {
 
-            Intent intent =
-                    new Intent(
-                            this,
-                            net.kdt.pojavlaunch
-                                    .ui
-                                    .LauncherActivity
-                                    .class
-                    );
-
-
-            startActivity(
-                    intent
-            );
-
-
-            finish();
-
+            showAccountSelector();
 
             return;
         }
@@ -2604,6 +2599,23 @@ public class LauncherActivity extends BaseActivity {
                 .computeNotchSize(
                         this
                 );
+    }
+    private void showAccountSelector() {
+
+        Intent intent =
+                new Intent(
+                        this,
+                        net.kdt.pojavlaunch
+                                .ui
+                                .LoginActivity
+                                .class
+                );
+
+        startActivity(
+                intent
+        );
+
+        finish();
     }
 
 }

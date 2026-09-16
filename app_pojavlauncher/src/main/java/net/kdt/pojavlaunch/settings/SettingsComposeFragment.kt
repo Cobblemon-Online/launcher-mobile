@@ -1,6 +1,7 @@
 package net.kdt.pojavlaunch.settings
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -25,6 +26,8 @@ import net.kdt.pojavlaunch.Tools
 import net.kdt.pojavlaunch.fragments.MicrosoftLoginFragment
 import net.kdt.pojavlaunch.contracts.OpenDocumentWithExtension
 import net.kdt.pojavlaunch.multirt.MultiRTConfigDialog
+import net.kdt.pojavlaunch.ui.MicrosoftLoginActivity
+import net.kdt.pojavlaunch.ui.OfflineLoginActivity
 
 enum class PlayUpdateStatus {
     IDLE,
@@ -252,11 +255,11 @@ class SettingsComposeFragment : Fragment() {
 
                     onAddMicrosoftAccount = {
 
-                        Tools.swapFragment(
-                            requireActivity(),
-                            MicrosoftLoginFragment::class.java,
-                            MicrosoftLoginFragment.TAG,
-                            null
+                        startActivity(
+                            Intent(
+                                requireContext(),
+                                MicrosoftLoginActivity::class.java
+                            )
                         )
                     },
 
@@ -265,7 +268,16 @@ class SettingsComposeFragment : Fragment() {
                     updateState = updateState,
                     onCheckForUpdate = ::checkForUpdate,
                     onStartUpdate = ::startFlexibleUpdate,
-                    onCompleteUpdate = ::completeUpdate
+                    onCompleteUpdate = ::completeUpdate,
+                    onAddOfflineAccount = {
+
+                        startActivity(
+                            Intent(
+                                requireContext(),
+                                OfflineLoginActivity::class.java
+                            )
+                        )
+                    }
                 )
             }
         }

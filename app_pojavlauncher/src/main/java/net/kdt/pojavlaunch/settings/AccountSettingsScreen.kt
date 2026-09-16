@@ -44,14 +44,11 @@ import net.kdt.pojavlaunch.value.MinecraftAccount
 
 @Composable
 public fun AccountSettingsScreen(
-    onAddMicrosoftAccount: () -> Unit
+    onAddMicrosoftAccount: () -> Unit,
+    onAddOfflineAccount: () -> Unit
 ) {
 
     val context = LocalContext.current
-
-    var showOfflineDialog by remember {
-        mutableStateOf(false)
-    }
 
     var currentAccount by remember {
         mutableStateOf(
@@ -102,7 +99,21 @@ public fun AccountSettingsScreen(
                 account = account,
                 current = true,
                 onSwitch = {},
-                onDelete = {}
+                onDelete = {
+
+                    activity?.deleteAccountFromCompose(
+                        account.username
+                    )
+
+                    accounts =
+                        PojavProfile.getAllProfiles()
+
+                    currentAccount =
+                        PojavProfile.getCurrentProfileContent(
+                            context,
+                            null
+                        )
+                }
             )
         }
 
@@ -182,43 +193,11 @@ public fun AccountSettingsScreen(
             icon = R.drawable.ic_pirate,
             title = "CONTA OFFLINE",
             action = "+ ADICIONAR CONTA",
-            onClick = {
-                showOfflineDialog = true
-            }
+            onClick = onAddOfflineAccount
         )
-
-        if (showOfflineDialog) {
-
-            OfflineAccountDialog(
-                onDismiss = {
-                    showOfflineDialog = false
-                },
-
-                onConfirm = { username ->
-
-                    val account = MinecraftAccount().apply {
-                        this.username = username
-                        this.accessToken = "0"
-                    }
-
-                    account.save()
-
-                    PojavProfile.setCurrentProfile(
-                        context,
-                        username
-                    )
-
-                    currentAccount = account
-
-                    accounts =
-                        PojavProfile.getAllProfiles()
-
-                    showOfflineDialog = false
-                }
-            )
-        }
     }
 }
+
 @Composable
 private fun OfflineAccountDialog(
     onDismiss: () -> Unit,
@@ -447,6 +426,7 @@ private fun OfflineAccountDialog(
         focusRequester.requestFocus()
     }
 }
+
 @Composable
 private fun AccountCard(
     account: MinecraftAccount,
@@ -506,6 +486,7 @@ private fun AccountCard(
                 .weight(1f)
         )
 
+        // Botão de trocar aparece apenas nas contas que não são a atual
         if (!current) {
 
             Image(
@@ -521,19 +502,21 @@ private fun AccountCard(
             Spacer(
                 modifier = Modifier.width(12.dp)
             )
-
-            Image(
-                painter = painterResource(R.drawable.ic_trash),
-                contentDescription = "Excluir conta",
-                modifier = Modifier
-                    .width(17.dp)
-                    .clickable {
-                        onDelete()
-                    }
-            )
         }
+
+        // Botão de excluir aparece em TODAS as contas
+        Image(
+            painter = painterResource(R.drawable.ic_trash),
+            contentDescription = "Excluir conta",
+            modifier = Modifier
+                .width(17.dp)
+                .clickable {
+                    onDelete()
+                }
+        )
     }
 }
+
 @Composable
 private fun AddAccountCard(
     icon: Int,

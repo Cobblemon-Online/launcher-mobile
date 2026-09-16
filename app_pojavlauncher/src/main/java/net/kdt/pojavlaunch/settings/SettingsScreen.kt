@@ -37,6 +37,7 @@ fun SettingsScreen(
     onTabSelected: (SettingsTab) -> Unit,
     onBack: () -> Unit,
     onAddMicrosoftAccount: () -> Unit,
+    onAddOfflineAccount: () -> Unit,
     onOpenRuntimeManager: () -> Unit,
     updateState: PlayUpdateUiState,
     onCheckForUpdate: () -> Unit,
@@ -155,7 +156,8 @@ fun SettingsScreen(
                     when (selectedTab) {
                         SettingsTab.ACCOUNT ->
                             AccountSettingsScreen(
-                                onAddMicrosoftAccount = onAddMicrosoftAccount
+                                onAddMicrosoftAccount = onAddMicrosoftAccount,
+                                onAddOfflineAccount = onAddOfflineAccount
                             )
 
                         SettingsTab.LAUNCHER ->
