@@ -2,6 +2,7 @@ package net.kdt.pojavlaunch
 
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -52,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import net.kdt.pojavlaunch.views.CenterCropVideoView
 import pl.droidsonroids.gif.GifDrawable
 import pl.droidsonroids.gif.GifImageView
 import java.net.HttpURLConnection
@@ -87,6 +89,8 @@ fun LauncherHomeScreen(
             .fillMaxSize()
     ) {
 
+        HomeBackgroundVideo()
+
         /*
          * Overlay que existia sobre o vídeo:
          *
@@ -114,6 +118,28 @@ fun LauncherHomeScreen(
                     vertical = 10.dp
                 )
         ) {
+            Box(
+                modifier =
+                    Modifier.width(
+                        100.dp
+                    ),
+                contentAlignment =
+                    Alignment.Center
+            ) {
+
+                Image(
+                    painter =
+                        painterResource(
+                            R.drawable.ic_launcher_logo
+                        ),
+                    contentDescription =
+                        "Cobblemon Online",
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    contentScale =
+                        ContentScale.FillWidth
+                )
+            }
 
             /*
              * =====================================
@@ -876,5 +902,40 @@ private fun AndroidDrawable(
             imageView.setImageResource(drawableRes)
         },
         modifier = modifier
+    )
+}
+@Composable
+private fun HomeBackgroundVideo() {
+
+    val context = LocalContext.current
+
+    AndroidView(
+        factory = {
+
+            CenterCropVideoView(context).apply {
+
+                setVideoURI(
+                    Uri.parse(
+                        "android.resource://${context.packageName}/${R.raw.launcher_background}"
+                    )
+                )
+
+                setOnPreparedListener { player ->
+
+                    player.isLooping = true
+                    player.setVolume(0f, 0f)
+
+                    setVideoSize(
+                        player.videoWidth,
+                        player.videoHeight
+                    )
+
+                    start()
+                }
+            }
+        },
+
+        modifier = Modifier
+            .fillMaxSize()
     )
 }

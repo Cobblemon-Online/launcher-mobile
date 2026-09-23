@@ -58,7 +58,7 @@ import net.kdt.pojavlaunch.R
  */
 
 private val LoginPurple =
-    Color(0xFF8C00FF)
+    Color(0xFF7806EA)
 
 private val LoginPurpleDark =
     Color(0xFF26094F)
@@ -111,18 +111,26 @@ fun LoginHomeScreen(
             Modifier.fillMaxSize()
     ) {
 
-        Image(
-            painter =
-                painterResource(
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Image(
+                painter = painterResource(
                     R.drawable.ic_login_option_background
                 ),
-            contentDescription =
-                null,
-            modifier =
-                Modifier.fillMaxSize(),
-            contentScale =
-                ContentScale.Crop
-        )
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Color.Black.copy(alpha = 0.5f)
+                    )
+            )
+        }
 
         Box(
             modifier =
@@ -948,17 +956,26 @@ fun OfflineLoginScreen(
         /*
          * FUNDO IGUAL AO DA TELA DE OPÇÕES
          */
-        Image(
-            painter =
-                painterResource(
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Image(
+                painter = painterResource(
                     R.drawable.ic_login_option_background
                 ),
-            contentDescription = null,
-            modifier =
-                Modifier.fillMaxSize(),
-            contentScale =
-                ContentScale.Crop
-        )
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Color.Black.copy(alpha = 0.5f)
+                    )
+            )
+        }
 
         /*
          * OVERLAY IGUAL AO DA TELA DE OPÇÕES
@@ -1199,9 +1216,6 @@ fun OfflineLoginScreen(
                                 .fillMaxWidth()
                                 .height(
                                     42.dp
-                                )
-                                .alpha(
-                                    if (isValid) 1f else 0.65f
                                 )
                                 .background(
                                     LoginPurple

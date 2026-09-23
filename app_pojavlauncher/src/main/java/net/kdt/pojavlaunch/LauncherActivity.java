@@ -134,8 +134,6 @@ public class LauncherActivity extends BaseActivity {
     // Views legadas
     // =========================================================
 
-    private CenterCropVideoView mBackgroundVideo;
-
     private mcAccountSpinner mAccountSpinner;
 
     private ProgressLayout mProgressLayout;
@@ -410,8 +408,6 @@ public class LauncherActivity extends BaseActivity {
 
         bindViews();
 
-        setupBackgroundVideo();
-
         setupPermissions();
 
         setupLauncherInfrastructure();
@@ -442,12 +438,6 @@ public class LauncherActivity extends BaseActivity {
     // =========================================================
 
     private void bindViews() {
-
-        mBackgroundVideo =
-                findViewById(
-                        R.id.background_video
-                );
-
 
         mAccountSpinner =
                 findViewById(
@@ -726,8 +716,6 @@ public class LauncherActivity extends BaseActivity {
                         instanceof LauncherHomeComposeFragment
         ) {
 
-            resumeBackgroundVideo();
-
             return;
         }
 
@@ -740,9 +728,6 @@ public class LauncherActivity extends BaseActivity {
                         HOME_COMPOSE_TAG
                 )
                 .commit();
-
-
-        resumeBackgroundVideo();
     }
 
 
@@ -762,9 +747,6 @@ public class LauncherActivity extends BaseActivity {
 
             return;
         }
-
-
-        pauseBackgroundVideo();
 
 
         getSupportFragmentManager()
@@ -790,90 +772,6 @@ public class LauncherActivity extends BaseActivity {
         return fragment
                 instanceof SettingsComposeFragment;
     }
-
-
-    // =========================================================
-    // Vídeo
-    // =========================================================
-
-    private void setupBackgroundVideo() {
-
-        Uri videoUri =
-                Uri.parse(
-                        "android.resource://"
-                                + getPackageName()
-                                + "/"
-                                + R.raw.launcher_background
-                );
-
-
-        mBackgroundVideo.setVideoURI(
-                videoUri
-        );
-
-
-        mBackgroundVideo.setOnPreparedListener(
-                mediaPlayer -> {
-
-                    mediaPlayer.setLooping(
-                            true
-                    );
-
-
-                    mediaPlayer.setVolume(
-                            0f,
-                            0f
-                    );
-
-
-                    mBackgroundVideo.setVideoSize(
-                            mediaPlayer.getVideoWidth(),
-                            mediaPlayer.getVideoHeight()
-                    );
-
-
-                    /*
-                     * Não inicia atrás das configurações.
-                     */
-                    if (
-                            !isSettingsOpen()
-                    ) {
-
-                        mBackgroundVideo.start();
-                    }
-                }
-        );
-    }
-
-
-    private void pauseBackgroundVideo() {
-
-        if (
-                mBackgroundVideo
-                        != null
-                        && mBackgroundVideo
-                        .isPlaying()
-        ) {
-
-            mBackgroundVideo.pause();
-        }
-    }
-
-
-    private void resumeBackgroundVideo() {
-
-        if (
-                mBackgroundVideo
-                        != null
-                        && !mBackgroundVideo
-                        .isPlaying()
-                        && !isSettingsOpen()
-        ) {
-
-            mBackgroundVideo.start();
-        }
-    }
-
 
     // =========================================================
     // Loading
@@ -2456,15 +2354,12 @@ public class LauncherActivity extends BaseActivity {
                 !isSettingsOpen()
         ) {
 
-            resumeBackgroundVideo();
         }
     }
 
 
     @Override
     protected void onPause() {
-
-        pauseBackgroundVideo();
 
 
         ContextExecutor.clearActivity();
@@ -2485,14 +2380,6 @@ public class LauncherActivity extends BaseActivity {
 
     @Override
     protected void onDestroy() {
-
-        if (
-                mBackgroundVideo
-                        != null
-        ) {
-
-            mBackgroundVideo.stopPlayback();
-        }
 
 
         if (

@@ -35,6 +35,7 @@
         android:process=":launcher"
         android:resizeableActivity="true"
         android:theme="@style/AppTheme">
+
         <activity
             android:name=".MissingStorageActivity"
             android:exported="false" />

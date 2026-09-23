@@ -27,6 +27,7 @@ public class TestStorageActivity extends Activity {
                 "ACTIVITY_FLOW",
                 "ABRIU TEST STORAGE: " + getClass().getName()
         );
+        
         if(Build.VERSION.SDK_INT >= 23 && Build.VERSION.SDK_INT < 29 && !isStorageAllowed(this)) requestStoragePermission();
         else exit();
     }

@@ -106,7 +106,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "org.angelauramc.amethyst"
+        applicationId "com.cobblemon.online"
         minSdkVersion 23
         targetSdkVersion 34
         versionCode 10000000
@@ -128,9 +128,10 @@ android {
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.customDebug
-            resValue 'string', 'application_package', 'org.angelauramc.amethyst.debug'
-            resValue 'string', 'storageProviderAuthorities', 'org.angelauramc.amethyst.scoped.gamefolder.debug'
-            resValue 'string', 'shareProviderAuthority', 'org.angelauramc.amethyst.scoped.controlfolder.debug'
+
+            resValue 'string', 'application_package', 'com.cobblemon.online.debug'
+            resValue 'string', 'storageProviderAuthorities', 'com.cobblemon.online.scoped.gamefolder.debug'
+            resValue 'string', 'shareProviderAuthority', 'com.cobblemon.online.scoped.controlfolder.debug'
         }
         proguard {
             initWith debug
@@ -143,14 +144,8 @@ android {
         }
 
         release {
-            // Don't set to true or java.awt will be a.a or something similar.
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            // defaultConfig already set
-            // multiDexEnabled = true
-            // debuggable = true
-            resValue 'string', 'storageProviderAuthorities', 'org.angelauramc.amethyst.scoped.gamefolder'
-            resValue 'string', 'application_package', 'org.angelauramc.amethyst'
+            resValue 'string', 'storageProviderAuthorities', 'com.cobblemon.online.scoped.gamefolder'
+            resValue 'string', 'application_package', 'com.cobblemon.online'
         }
         gplay {
             initWith release
