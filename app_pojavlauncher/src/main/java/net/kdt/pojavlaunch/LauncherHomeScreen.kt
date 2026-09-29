@@ -12,6 +12,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -23,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
@@ -52,11 +55,20 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import net.kdt.pojavlaunch.views.CenterCropVideoView
+import org.json.JSONObject
 import pl.droidsonroids.gif.GifDrawable
 import pl.droidsonroids.gif.GifImageView
+import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
+import java.io.ByteArrayOutputStream
+import java.io.DataInputStream
+import java.io.DataOutputStream
 import java.net.HttpURLConnection
+import java.net.InetSocketAddress
+import java.net.Socket
 import java.net.URL
 import kotlin.math.roundToInt
 
@@ -74,6 +86,8 @@ fun LauncherHomeScreen(
     loading: Boolean,
     loadingProgress: Float,
     accountRefreshKey: Int,
+    serverHost: String,
+    serverPort: Int = 25565,
     onPlay: () -> Unit,
     onSettings: () -> Unit,
     onSocial: (Int) -> Unit
@@ -143,7 +157,12 @@ fun LauncherHomeScreen(
 
             /*
              * =====================================
-             * CONFIGURAÇÕES
+             * SERVIDOR + CONFIGURAÇÕES
+             * =====================================
+             */
+            /*
+             * =====================================
+             * CONFIGURAÇÕES — ESQUERDA
              * =====================================
              */
             SettingsHomeButton(
@@ -152,6 +171,20 @@ fun LauncherHomeScreen(
                         Alignment.CenterStart
                     ),
                 onClick = onSettings
+            )
+
+            /*
+             * =====================================
+             * SERVIDOR — DIREITA
+             * =====================================
+             */
+            ServerPlayersCard(
+                host = serverHost,
+                port = serverPort,
+                modifier = Modifier
+                    .align(
+                        Alignment.CenterEnd
+                    )
             )
 
             /*
@@ -740,6 +773,518 @@ private fun LoadingBottomBar(
                     )
                 }
         )
+    }
+}
+
+
+/*
+ * ============================================================
+ * STATUS DO SERVIDOR
+ * ============================================================
+ *
+ * Consulta diretamente o Server List Ping do Minecraft.
+ * Não depende de API pública/terceiros.
+ */
+private data class MinecraftServerStatus(
+    val onlinePlayers: Int,
+    val maxPlayers: Int
+)
+
+private data class MinecraftServerStatusUiState(
+    val loading: Boolean = true,
+    val status: MinecraftServerStatus? = null
+)
+
+@Composable
+private fun ServerPlayersCard(
+    host: String,
+    port: Int,
+    modifier: Modifier = Modifier
+) {
+
+    val state =
+        rememberMinecraftServerStatus(
+            host = host,
+            port = port
+        )
+
+    val valueText =
+        when {
+            state.loading ->
+                "..."
+
+            state.status == null ->
+                "X"
+
+            else ->
+                state.status
+                    .onlinePlayers
+                    .toString()
+        }
+
+    val labelText =
+        when {
+            state.loading ->
+                "VERIFICANDO"
+
+            state.status == null ->
+                "SERVIDOR OFFLINE"
+
+            else ->
+                "JOGADORES ONLINE"
+        }
+
+    val valueColor =
+        when {
+            state.loading ->
+                Color(
+                    0xFFB5A8BE
+                )
+
+            state.status == null ->
+                Color(
+                    0xFFE57373
+                )
+
+            else ->
+                Color(
+                    0xFF40FF00
+                )
+        }
+
+    Box(
+        modifier = modifier
+            .width(
+                260.dp
+            )
+            .height(
+                56.dp
+            )
+            .background(
+                Color(
+                    0xD9342364
+                ),
+                RoundedCornerShape(
+                    6.dp
+                )
+            )
+
+            .padding(
+                horizontal = 14.dp
+            ),
+        contentAlignment =
+            Alignment.Center
+    ) {
+
+        Row(
+            verticalAlignment =
+                Alignment.CenterVertically
+        ) {
+            Text(
+                text = labelText,
+                color =
+                    Color.White,
+                fontFamily =
+                    HomeMinecraftFont,
+                fontSize =
+                    9.sp,
+                letterSpacing =
+                    3.5.sp,
+                maxLines =
+                    1,
+                overflow =
+                    TextOverflow.Ellipsis
+            )
+
+            Spacer(
+                modifier =
+                    Modifier.width(
+                        10.dp
+                    )
+            )
+
+            Text(
+                text = valueText,
+                color = valueColor,
+                fontFamily =
+                    HomeMinecraftBoldFont,
+                fontSize =
+                    8.sp,
+                maxLines =
+                    1
+            )
+        }
+    }
+}
+
+@Composable
+private fun rememberMinecraftServerStatus(
+    host: String,
+    port: Int
+): MinecraftServerStatusUiState {
+
+    var state by
+    remember(
+        host,
+        port
+    ) {
+        mutableStateOf(
+            MinecraftServerStatusUiState()
+        )
+    }
+
+    LaunchedEffect(
+        host,
+        port
+    ) {
+
+        while (true) {
+
+            val status =
+                withContext(
+                    Dispatchers.IO
+                ) {
+                    queryMinecraftServerStatus(
+                        host = host,
+                        port = port
+                    )
+                }
+
+            state =
+                MinecraftServerStatusUiState(
+                    loading = false,
+                    status = status
+                )
+
+            /*
+             * Mesmo intervalo usado pelo launcher desktop:
+             * 5 minutos.
+             */
+            delay(
+                5 * 60 * 1000L
+            )
+        }
+    }
+
+    return state
+}
+
+private fun queryMinecraftServerStatus(
+    host: String,
+    port: Int
+): MinecraftServerStatus? {
+
+    if (
+        host.isBlank()
+        || port !in 1..65535
+    ) {
+        return null
+    }
+
+    val socket =
+        Socket()
+
+    return try {
+
+        socket.connect(
+            InetSocketAddress(
+                host,
+                port
+            ),
+            4000
+        )
+
+        socket.soTimeout =
+            4000
+
+        val input =
+            DataInputStream(
+                BufferedInputStream(
+                    socket.getInputStream()
+                )
+            )
+
+        val output =
+            DataOutputStream(
+                BufferedOutputStream(
+                    socket.getOutputStream()
+                )
+            )
+
+        /*
+         * Handshake para o estado STATUS.
+         *
+         * Protocol 47 é mantido por compatibilidade com a
+         * consulta usada pelo launcher desktop anterior.
+         */
+        val handshakeBuffer =
+            ByteArrayOutputStream()
+
+        val handshake =
+            DataOutputStream(
+                handshakeBuffer
+            )
+
+        writeVarInt(
+            handshake,
+            47
+        )
+
+        writeMinecraftString(
+            handshake,
+            host
+        )
+
+        handshake.writeShort(
+            port
+        )
+
+        writeVarInt(
+            handshake,
+            1
+        )
+
+        handshake.flush()
+
+        writeMinecraftPacket(
+            output = output,
+            packetId = 0x00,
+            payload =
+                handshakeBuffer
+                    .toByteArray()
+        )
+
+        /*
+         * Status Request.
+         */
+        writeMinecraftPacket(
+            output = output,
+            packetId = 0x00,
+            payload =
+                byteArrayOf()
+        )
+
+        output.flush()
+
+        /*
+         * Status Response:
+         * packet length -> packet id -> JSON length -> JSON.
+         */
+        val packetLength =
+            readVarInt(
+                input
+            )
+
+        if (
+            packetLength <= 0
+            || packetLength > 1_048_576
+        ) {
+            return null
+        }
+
+        val packetId =
+            readVarInt(
+                input
+            )
+
+        if (
+            packetId != 0x00
+        ) {
+            return null
+        }
+
+        val jsonLength =
+            readVarInt(
+                input
+            )
+
+        if (
+            jsonLength <= 0
+            || jsonLength > 1_048_576
+        ) {
+            return null
+        }
+
+        val jsonBytes =
+            ByteArray(
+                jsonLength
+            )
+
+        input.readFully(
+            jsonBytes
+        )
+
+        val response =
+            JSONObject(
+                String(
+                    jsonBytes,
+                    Charsets.UTF_8
+                )
+            )
+
+        val players =
+            response.getJSONObject(
+                "players"
+            )
+
+        MinecraftServerStatus(
+            onlinePlayers =
+                players.getInt(
+                    "online"
+                ),
+            maxPlayers =
+                players.getInt(
+                    "max"
+                )
+        )
+
+    } catch (
+        exception: Exception
+    ) {
+
+        null
+
+    } finally {
+
+        try {
+            socket.close()
+        } catch (
+            exception: Exception
+        ) {
+            // Nada a fazer.
+        }
+    }
+}
+
+private fun writeMinecraftPacket(
+    output: DataOutputStream,
+    packetId: Int,
+    payload: ByteArray
+) {
+
+    val packetBuffer =
+        ByteArrayOutputStream()
+
+    val packet =
+        DataOutputStream(
+            packetBuffer
+        )
+
+    writeVarInt(
+        packet,
+        packetId
+    )
+
+    packet.write(
+        payload
+    )
+
+    packet.flush()
+
+    val packetBytes =
+        packetBuffer
+            .toByteArray()
+
+    writeVarInt(
+        output,
+        packetBytes.size
+    )
+
+    output.write(
+        packetBytes
+    )
+}
+
+private fun writeMinecraftString(
+    output: DataOutputStream,
+    value: String
+) {
+
+    val bytes =
+        value.toByteArray(
+            Charsets.UTF_8
+        )
+
+    writeVarInt(
+        output,
+        bytes.size
+    )
+
+    output.write(
+        bytes
+    )
+}
+
+private fun writeVarInt(
+    output: DataOutputStream,
+    value: Int
+) {
+
+    var current =
+        value
+
+    while (true) {
+
+        if (
+            (current and 0xFFFFFF80.toInt()) == 0
+        ) {
+
+            output.writeByte(
+                current
+            )
+
+            return
+        }
+
+        output.writeByte(
+            (current and 0x7F) or 0x80
+        )
+
+        current =
+            current ushr 7
+    }
+}
+
+private fun readVarInt(
+    input: DataInputStream
+): Int {
+
+    var result =
+        0
+
+    var numRead =
+        0
+
+    while (true) {
+
+        val read =
+            input.readUnsignedByte()
+
+        val value =
+            read and 0x7F
+
+        result =
+            result or
+                    (
+                            value shl
+                                    (7 * numRead)
+                            )
+
+        numRead++
+
+        if (
+            numRead > 5
+        ) {
+            throw IllegalStateException(
+                "VarInt inválido recebido do servidor"
+            )
+        }
+
+        if (
+            (read and 0x80) == 0
+        ) {
+            return result
+        }
     }
 }
 

@@ -119,6 +119,8 @@ android {
                 arguments "APP_SHORT_COMMANDS=true"
             }
         }
+        buildConfigField "String", "MINECRAFT_SERVER_HOST", "\"play.cobblemononline.com.br\""
+        buildConfigField "int", "MINECRAFT_SERVER_PORT", "25565"
     }
 
     buildTypes {

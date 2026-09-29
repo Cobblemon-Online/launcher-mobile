@@ -6,10 +6,14 @@ import android.app.*;
 import android.content.*;
 import android.content.pm.*;
 import android.content.res.*;
+import android.graphics.Color;
 import android.os.*;
 import androidx.core.app.*;
+import androidx.core.view.WindowCompat;
 
 import android.util.*;
+import android.view.Window;
+
 import java.io.*;
 import java.text.*;
 import java.util.*;
@@ -30,6 +34,7 @@ public class PojavApplication extends Application {
 	
 	@Override
 	public void onCreate() {
+
 		ContextExecutor.setApplication(this);
 		Thread.setDefaultUncaughtExceptionHandler((thread, th) -> {
 			boolean storagePermAllowed = (Build.VERSION.SDK_INT < 23 || Build.VERSION.SDK_INT >= 29 ||
@@ -58,6 +63,39 @@ public class PojavApplication extends Application {
 		
 		try {
 			super.onCreate();
+            registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
+                @Override
+                public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
+                    Window window = activity.getWindow();
+
+                    window.setStatusBarColor(Color.TRANSPARENT);
+                    window.setNavigationBarColor(Color.TRANSPARENT);
+
+                    WindowCompat.setDecorFitsSystemWindows(window, false);
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        window.setNavigationBarContrastEnforced(false);
+                    }
+                }
+
+                @Override
+                public void onActivityStarted(Activity activity) {}
+
+                @Override
+                public void onActivityResumed(Activity activity) {}
+
+                @Override
+                public void onActivityPaused(Activity activity) {}
+
+                @Override
+                public void onActivityStopped(Activity activity) {}
+
+                @Override
+                public void onActivitySaveInstanceState(Activity activity, Bundle outState) {}
+
+                @Override
+                public void onActivityDestroyed(Activity activity) {}
+            });
 			if(Tools.checkStorageRoot(this)){
 				// Implicitly initializes early constants and storage constants.
 				// Required to run the main activity properly.

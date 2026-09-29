@@ -5,16 +5,20 @@
         <item name="windowNoTitle">true</item>
         <item name="windowActionBar">false</item>
         <item name="android:windowContentOverlay">@null</item>
+
         <item name="preferenceTheme">@style/PreferenceThemeOverlay.v14.Material</item>
 
         <item name="android:textSize">@dimen/_12ssp</item>
+
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
 
         <item name="android:windowLightStatusBar">false</item>
 
-        <item name="android:windowActionModeOverlay">true</item>
 
+        <item name="android:windowActionModeOverlay">true</item>
     </style>
 
     <style name="LauncherFragment_Divider">

@@ -62,7 +62,9 @@ class LauncherHomeComposeFragment : Fragment() {
                         launcherActivity.openSocialLinkFromCompose(
                             urlResource
                         )
-                    }
+                    },
+                    serverHost = BuildConfig.MINECRAFT_SERVER_HOST,
+                    serverPort = BuildConfig.MINECRAFT_SERVER_PORT
                 )
             }
         }

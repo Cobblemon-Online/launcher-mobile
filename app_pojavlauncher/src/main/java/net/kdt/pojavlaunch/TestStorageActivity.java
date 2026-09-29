@@ -14,6 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.core.view.WindowCompat;
 
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.tasks.AsyncAssetManager;
@@ -27,7 +28,7 @@ public class TestStorageActivity extends Activity {
                 "ACTIVITY_FLOW",
                 "ABRIU TEST STORAGE: " + getClass().getName()
         );
-        
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         if(Build.VERSION.SDK_INT >= 23 && Build.VERSION.SDK_INT < 29 && !isStorageAllowed(this)) requestStoragePermission();
         else exit();
     }
