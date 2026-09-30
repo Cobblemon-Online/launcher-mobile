@@ -1,6 +1,7 @@
 package net.kdt.pojavlaunch.ui
 
 import android.content.Intent
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -10,10 +11,15 @@ import androidx.compose.material3.MaterialTheme
 import net.kdt.pojavlaunch.LauncherActivity as PojavLauncherActivity
 import net.kdt.pojavlaunch.PojavProfile
 import net.kdt.pojavlaunch.Tools
+import net.kdt.pojavlaunch.utils.LocaleUtils
 import net.kdt.pojavlaunch.value.MinecraftAccount
 import java.io.File
 
 class OfflineLoginActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleUtils.setLocale(newBase))
+    }
 
     override fun onCreate(
         savedInstanceState: Bundle?

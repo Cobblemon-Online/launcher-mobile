@@ -27,6 +27,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import net.kdt.pojavlaunch.R
 import androidx.compose.ui.unit.sp
 import net.kdt.pojavlaunch.LauncherActivity
 import net.kdt.pojavlaunch.modpacks.ManagedModpack
@@ -62,14 +64,14 @@ public fun ModpackSettingsScreen() {
     ) {
 
         Text(
-            text = "Modpack",
+            text = stringResource(R.string.settings_modpack),
             color = Color.White,
             fontFamily = MinecraftFont,
             fontSize = 15.sp
         )
 
         Text(
-            text = "Selecione o modpack que deseja jogar",
+            text = stringResource(R.string.settings_select_modpack),
             color = Color(0xFF8D8D8D),
             fontFamily = MinecraftFont,
             fontSize = 9.sp

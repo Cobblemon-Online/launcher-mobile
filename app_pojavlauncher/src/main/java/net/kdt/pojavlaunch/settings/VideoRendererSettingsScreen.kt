@@ -18,6 +18,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -184,14 +185,14 @@ fun VideoRendererSettingsScreen() {
          */
 
         Text(
-            text = "Vídeo e Renderizador",
+            text = stringResource(R.string.settings_video_renderer),
             color = Color.White,
             fontFamily = MinecraftFont,
             fontSize = 15.sp
         )
 
         Text(
-            text = "Resolução e desempenho",
+            text = stringResource(R.string.settings_resolution_performance),
             color = Color(0xFF8D8D8D),
             fontFamily = MinecraftFont,
             fontSize = 9.sp
@@ -210,7 +211,7 @@ fun VideoRendererSettingsScreen() {
         SettingsContainer {
 
             Text(
-                text = "Renderizador",
+                text = stringResource(R.string.settings_renderer),
                 color = Color.White,
                 fontFamily = MinecraftFont,
                 fontSize = 10.sp
@@ -259,14 +260,14 @@ fun VideoRendererSettingsScreen() {
         SettingsContainer {
 
             Text(
-                text = "Escala de resolução",
+                text = stringResource(R.string.settings_resolution_scale),
                 color = Color.White,
                 fontFamily = MinecraftFont,
                 fontSize = 10.sp
             )
 
             Text(
-                text = "Escolha a escala de resolução do jogo",
+                text = stringResource(R.string.settings_choose_resolution_scale),
                 color = Color(0xFF858585),
                 fontFamily = MinecraftFont,
                 fontSize = 7.sp
@@ -415,7 +416,7 @@ fun VideoRendererSettingsScreen() {
             )
 
             SettingSwitchCard(
-                title = "Forçar VSync",
+                title = stringResource(R.string.settings_force_vsync),
                 description =
                     "Força a sincronização vertical durante a renderização",
                 checked = forceVsync,
@@ -446,7 +447,7 @@ fun VideoRendererSettingsScreen() {
          */
 
         SettingSwitchCard(
-            title = "VSync no Zink",
+            title = stringResource(R.string.settings_vsync_zink),
             description =
                 "Ativa sincronização vertical ao utilizar Zink",
             checked = vsyncInZink,
@@ -482,7 +483,7 @@ fun VideoRendererSettingsScreen() {
             )
 
             SettingSwitchCard(
-                title = "Ignorar recorte da tela",
+                title = stringResource(R.string.settings_ignore_display_cutout),
                 description =
                     "Permite que o jogo utilize a área do notch",
                 checked = ignoreNotch,

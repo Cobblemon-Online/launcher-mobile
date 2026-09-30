@@ -12,6 +12,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import net.kdt.pojavlaunch.R
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -77,7 +79,7 @@ fun ExperimentalSettingsScreen() {
     ) {
 
         SettingsPageHeader(
-            title = "Opções experimentais",
+            title = stringResource(R.string.settings_experimental),
             description =
                 "Não fornecemos suporte a essas opções"
         )
@@ -89,7 +91,7 @@ fun ExperimentalSettingsScreen() {
          */
 
         SettingsSwitchCard(
-            title = "Salvar shaders no log",
+            title = stringResource(R.string.settings_save_shaders_log),
             description =
                 "Registra shaders convertidos no arquivo de log.",
             checked = dumpShaders,
@@ -150,7 +152,7 @@ fun ExperimentalSettingsScreen() {
          */
 
         SettingsSwitchCard(
-            title = "Forçar execução do Sodium",
+            title = stringResource(R.string.settings_force_sodium),
             description =
                 if (sodiumOverride) {
                     "Sodium não é suportado. Problemas causados por esta opção não recebem suporte."

@@ -11,6 +11,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -208,8 +209,8 @@ fun ControlSettingsScreen() {
          */
 
         SettingsPageHeader(
-            title = "Controles",
-            description = "Gestos, botões e escala"
+            title = stringResource(R.string.settings_controls),
+            description = stringResource(R.string.settings_controls_description)
         )
 
         /*
@@ -219,7 +220,7 @@ fun ControlSettingsScreen() {
          */
 
         SettingsActionCard(
-            title = "Personalizar controles",
+            title = stringResource(R.string.settings_customize_controls),
             description =
                 "Ajuste o esquema de controles de acordo com suas necessidades.",
             onClick = {
@@ -244,7 +245,7 @@ fun ControlSettingsScreen() {
          */
 
         SettingsActionCard(
-            title = "Resetar controles",
+            title = stringResource(R.string.settings_reset_controls),
             description =
                 "Restaura o esquema de controles padrão.",
             onClick = {
@@ -263,7 +264,7 @@ fun ControlSettingsScreen() {
          */
 
         SettingsSwitchCard(
-            title = "Trocar Gestos",
+            title = stringResource(R.string.settings_swap_gestures),
             description =
                 "Troque os gestos, toque para bater, segure para colocar blocos ou usar um arco.",
             checked = swapGestures,
@@ -291,7 +292,7 @@ fun ControlSettingsScreen() {
          */
 
         SettingsSwitchCard(
-            title = "Desativar Gestos",
+            title = stringResource(R.string.settings_disable_gestures),
             description =
                 "Desativa gestos, como segurar para quebrar blocos e tocar para colocar um bloco.",
             checked = disableGestures,
@@ -390,7 +391,7 @@ fun ControlSettingsScreen() {
 
 
         SettingsSectionTitle(
-            text = "Botões"
+            text = stringResource(R.string.settings_buttons)
         )
 
         SettingsSliderCard(
@@ -460,7 +461,7 @@ fun ControlSettingsScreen() {
          */
 
         SettingsSectionTitle(
-            text = "Mouse virtual"
+            text = stringResource(R.string.settings_virtual_mouse)
         )
 
         SettingsSliderCard(
@@ -572,7 +573,7 @@ fun ControlSettingsScreen() {
         if (gyroAvailable) {
 
             SettingsSectionTitle(
-                text = "Giroscópio"
+                text = stringResource(R.string.settings_gyroscope)
             )
 
             SettingsSwitchCard(
@@ -756,7 +757,7 @@ fun ControlSettingsScreen() {
          */
 
         SettingsSectionTitle(
-            text = "Controle físico"
+            text = stringResource(R.string.settings_physical_controller)
         )
 
         SettingsSliderCard(
@@ -815,7 +816,7 @@ fun ControlSettingsScreen() {
 
             title = {
                 Text(
-                    text = "Resetar controles"
+                    text = stringResource(R.string.settings_reset_controls)
                 )
             },
 

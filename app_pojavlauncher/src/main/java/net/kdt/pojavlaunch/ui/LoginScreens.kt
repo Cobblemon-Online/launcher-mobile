@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -189,7 +190,7 @@ fun LoginHomeScreen(
 
                     Text(
                         text =
-                            "BEM-VINDO",
+                            stringResource(R.string.login_welcome),
                         color =
                             Color.White,
                         fontFamily =
@@ -209,7 +210,7 @@ fun LoginHomeScreen(
 
                     Text(
                         text =
-                            "BEM-VINDO",
+                            stringResource(R.string.login_welcome),
                         color =
                             Color.White,
                         fontFamily =
@@ -248,7 +249,7 @@ fun LoginHomeScreen(
 
                 LoginButton(
                     text =
-                        "Entrar com Microsoft",
+                        stringResource(R.string.login_microsoft),
                     background =
                         LoginPurple,
                     textColor =
@@ -266,7 +267,7 @@ fun LoginHomeScreen(
 
                 LoginButton(
                     text =
-                        "Entrar Offline",
+                        stringResource(R.string.login_offline),
                     background =
                         LoginPurpleDark,
                     textColor =
@@ -318,7 +319,7 @@ private fun LoginLogo() {
                     R.drawable.ic_launcher_logo
                 ),
             contentDescription =
-                "Cobblemon Online",
+                stringResource(R.string.app_name),
             modifier =
                 Modifier.fillMaxWidth(),
             contentScale =
@@ -345,18 +346,10 @@ private fun WelcomeDescription() {
     ) {
 
         LoginDescriptionLine(
-            parts =
-                listOf(
-                    DescriptionPart(
-                        "SUA JORNADA ",
-                        Color.White
-                    ),
-
-                    DescriptionPart(
-                        "COBBLEMON",
-                        LoginPurple
-                    )
-                )
+            parts = listOf(
+                DescriptionPart(stringResource(R.string.login_description_journey), Color.White),
+                DescriptionPart(stringResource(R.string.login_description_cobblemon), LoginPurple)
+            )
         )
 
         Spacer(
@@ -367,18 +360,10 @@ private fun WelcomeDescription() {
         )
 
         LoginDescriptionLine(
-            parts =
-                listOf(
-                    DescriptionPart(
-                        "ONLINE",
-                        LoginPurple
-                    ),
-
-                    DescriptionPart(
-                        " COMEÇA AQUI!",
-                        Color.White
-                    )
-                )
+            parts = listOf(
+                DescriptionPart(stringResource(R.string.login_description_online), LoginPurple),
+                DescriptionPart(stringResource(R.string.login_description_starts), Color.White)
+            )
         )
 
         Spacer(
@@ -389,13 +374,9 @@ private fun WelcomeDescription() {
         )
 
         LoginDescriptionLine(
-            parts =
-                listOf(
-                    DescriptionPart(
-                        "PREPARE-SE PARA UMA",
-                        Color.White
-                    )
-                )
+            parts = listOf(
+                DescriptionPart(stringResource(R.string.login_description_prepare), Color.White)
+            )
         )
 
         Spacer(
@@ -406,18 +387,10 @@ private fun WelcomeDescription() {
         )
 
         LoginDescriptionLine(
-            parts =
-                listOf(
-                    DescriptionPart(
-                        "AVENTURA ÚNICA",
-                        LoginPurple
-                    ),
-
-                    DescriptionPart(
-                        " NO MUNDO",
-                        Color.White
-                    )
-                )
+            parts = listOf(
+                DescriptionPart(stringResource(R.string.login_description_unique_adventure), LoginPurple),
+                DescriptionPart(stringResource(R.string.login_description_in_world), Color.White)
+            )
         )
 
         Spacer(
@@ -428,13 +401,9 @@ private fun WelcomeDescription() {
         )
 
         LoginDescriptionLine(
-            parts =
-                listOf(
-                    DescriptionPart(
-                        "DO COBBLEMON! AQUI.",
-                        Color.White
-                    )
-                )
+            parts = listOf(
+                DescriptionPart(stringResource(R.string.login_description_final), Color.White)
+            )
         )
     }
 }
@@ -444,7 +413,6 @@ private data class DescriptionPart(
     val text: String,
     val color: Color
 )
-
 
 @Composable
 private fun LoginDescriptionLine(
@@ -458,23 +426,21 @@ private fun LoginDescriptionLine(
             Alignment.CenterVertically
     ) {
 
-        parts.forEach {
-                part ->
-
+        parts.forEachIndexed { index, part ->
             Text(
-                text =
-                    part.text,
-                color =
-                    part.color,
-                fontFamily =
-                    LoginMinecraftFont,
-                fontSize =
-                    12.sp,
-                letterSpacing =
-                    0.20.em,
-                maxLines =
-                    1
+                text = part.text,
+                color = part.color,
+                fontFamily = LoginMinecraftFont,
+                fontSize = 12.sp,
+                letterSpacing = 0.20.em,
+                maxLines = 1
             )
+
+            if (index < parts.lastIndex) {
+                Spacer(
+                    modifier = Modifier.width(4.dp)
+                )
+            }
         }
     }
 }
@@ -677,7 +643,7 @@ private fun LoginSocialBar(
             icon =
                 R.drawable.ic_instagram_grey_1,
             description =
-                "Instagram",
+                stringResource(R.string.social_instagram_name),
             onClick = {
 
                 onSocial(
@@ -690,7 +656,7 @@ private fun LoginSocialBar(
             icon =
                 R.drawable.ic_discord_grey_1,
             description =
-                "Discord",
+                stringResource(R.string.social_discord_name),
             onClick = {
 
                 onSocial(
@@ -703,7 +669,7 @@ private fun LoginSocialBar(
             icon =
                 R.drawable.ic_tiktok_grey_1,
             description =
-                "TikTok",
+                stringResource(R.string.social_tiktok_name),
             onClick = {
 
                 onSocial(
@@ -716,7 +682,7 @@ private fun LoginSocialBar(
             icon =
                 R.drawable.ic_twitter_grey_1,
             description =
-                "X",
+                stringResource(R.string.social_x_name),
             onClick = {
 
                 onSocial(
@@ -729,7 +695,7 @@ private fun LoginSocialBar(
             icon =
                 R.drawable.ic_youtube_grey_1,
             description =
-                "YouTube",
+                stringResource(R.string.social_youtube_name),
             onClick = {
 
                 onSocial(
@@ -1075,7 +1041,7 @@ fun OfflineLoginScreen(
                         )
 
                         Text(
-                            text = "LOGIN",
+                            text = stringResource(R.string.login_title),
                             color = Color.White,
                             fontFamily =
                                 LoginMinecraftBoldFont,
@@ -1096,7 +1062,7 @@ fun OfflineLoginScreen(
                     )
 
                     Text(
-                        text = "Nome de usuário",
+                        text = stringResource(R.string.login_username),
                         color = Color.White,
                         fontFamily =
                             LoginMinecraftFont,
@@ -1145,7 +1111,9 @@ fun OfflineLoginScreen(
 
                             Text(
                                 text =
-                                    "Nome de usuário",
+                                    stringResource(
+                                        R.string.login_online_username_hint
+                                    ),
                                 color =
                                     Color(0xFF9D9D9D),
                                 fontFamily =
@@ -1197,7 +1165,7 @@ fun OfflineLoginScreen(
 
                         Text(
                             text =
-                                "Use de 3 a 16 caracteres: letras, números ou _",
+                                stringResource(R.string.login_invalid_username),
                             color =
                                 Color(0xFFFF6D6D),
                             fontFamily =
@@ -1239,7 +1207,7 @@ fun OfflineLoginScreen(
                     ) {
 
                         Text(
-                            text = "Entrar",
+                            text = stringResource(R.string.login_enter),
                             color = Color.White,
                             fontFamily =
                                 LoginMinecraftFont,

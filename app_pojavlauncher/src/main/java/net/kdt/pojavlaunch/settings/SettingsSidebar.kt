@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.kdt.pojavlaunch.R
@@ -46,13 +47,13 @@ public fun SettingsSidebar(
                 painter = painterResource(
                     R.drawable.btn_voltar
                 ),
-                contentDescription = "Voltar",
+                contentDescription = stringResource(R.string.settings_back),
                 modifier = Modifier.fillMaxWidth(),
                 contentScale = ContentScale.FillWidth
             )
 
             Text(
-                text = "Voltar",
+                text = stringResource(R.string.settings_back),
                 color = Color.White,
                 fontFamily = MinecraftFont,
                 fontSize = 9.sp
@@ -64,7 +65,7 @@ public fun SettingsSidebar(
         )
 
         SettingsSidebarItem(
-            text = "Conta",
+            text = stringResource(R.string.settings_account),
             selected = selectedTab == SettingsTab.ACCOUNT,
             onClick = {
                 onTabSelected(SettingsTab.ACCOUNT)
@@ -72,7 +73,7 @@ public fun SettingsSidebar(
         )
 
         SettingsSidebarItem(
-            text = "Launcher",
+            text = stringResource(R.string.settings_launcher),
             selected = selectedTab == SettingsTab.LAUNCHER,
             onClick = {
                 onTabSelected(SettingsTab.LAUNCHER)
@@ -80,7 +81,7 @@ public fun SettingsSidebar(
         )
 
         SettingsSidebarItem(
-            text = "Modpack",
+            text = stringResource(R.string.settings_modpack),
             selected = selectedTab == SettingsTab.MODPACK,
             onClick = {
                 onTabSelected(SettingsTab.MODPACK)
@@ -88,7 +89,7 @@ public fun SettingsSidebar(
         )
 
         SettingsSidebarItem(
-            text = "Sobre",
+            text = stringResource(R.string.settings_about),
             selected = selectedTab == SettingsTab.ABOUT,
             onClick = {
                 onTabSelected(SettingsTab.ABOUT)

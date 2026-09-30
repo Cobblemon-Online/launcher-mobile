@@ -3,6 +3,13 @@
     <!-- App name part -->
     <!-- Action bar part -->
     <!-- Languages list part -->
+    <!-- Tela inicial do launcher -->
+    <string name="home_settings">Configurações</string>
+    <string name="home_player_skin">Skin do jogador</string>
+
+    <string name="home_server_checking">VERIFICANDO</string>
+    <string name="home_server_offline">SERVIDOR OFFLINE</string>
+    <string name="home_players_online">JOGADORES ONLINE</string>
     <!-- Login strings -->
     <string name="login_online_username_hint">Nome de Usuário</string>
     <string name="login_online_login_label">Iniciar sessão</string>
@@ -346,4 +353,87 @@
     <string name="local_login_bad_username_text">O nome de usuário deve ter entre 3 a 16 caracteres, deve conter somente letras latinas, número de 0 a 9 e sublinhados.</string>
     <string name="quick_setting_title">Configurações rápidas</string>
     <string name="preference_experimental_title">Opções experimentais</string>
+    <!-- Interface Compose: configurações e contas -->
+    <string name="settings_title">CONFIGURAÇÕES</string>
+    <string name="settings_back">Voltar</string>
+    <string name="settings_account">Conta</string>
+    <string name="settings_launcher">Launcher</string>
+    <string name="settings_modpack">Modpack</string>
+    <string name="settings_about">Sobre</string>
+    <string name="settings_manage_launcher">Gerencie seu launcher</string>
+    <string name="settings_manage_accounts">Gerencie suas contas</string>
+    <string name="settings_video_renderer">Vídeo e Renderizador</string>
+    <string name="settings_resolution_performance">Resolução e desempenho</string>
+    <string name="settings_controls">Controles</string>
+    <string name="settings_controls_description">Gestos, botões e escala</string>
+    <string name="settings_java_tweaks">Ajustes do Java</string>
+    <string name="settings_java_description">Java Runtimes, argumentos JVM, quantidade de RAM e sandbox</string>
+    <string name="settings_miscellaneous">Configurações diversas</string>
+    <string name="settings_organize_game">Organize seu jogo</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_change_language">Alterar idioma do launcher</string>
+    <string name="settings_select_language">Selecione o idioma do launcher</string>
+    <string name="settings_experimental">Opções experimentais</string>
+    <string name="settings_no_experimental_support">Não fornecemos suporte a essas opções</string>
+    <string name="settings_change_account">Trocar de conta</string>
+    <string name="settings_add_account">+ ADICIONAR CONTA</string>
+    <string name="settings_offline_account">CONTA OFFLINE</string>
+    <string name="settings_offline_account_description">Escolha o nick que será usado no jogo.</string>
+    <string name="settings_nickname">Nick</string>
+    <string name="settings_cancel">CANCELAR</string>
+    <string name="settings_add">ADICIONAR</string>
+    <string name="settings_switch_account">Trocar conta</string>
+    <string name="settings_delete_account">Excluir conta</string>
+    <string name="settings_about_launcher">Sobre o Launcher</string>
+    <string name="settings_status">Status</string>
+    <string name="settings_whats_new">Novidades</string>
+    <string name="settings_select_modpack">Selecione o modpack que deseja jogar</string>
+    <string name="settings_download_source">Fonte de download do jogo</string>
+    <string name="settings_customize_controls">Personalizar controles</string>
+    <string name="settings_reset_controls">Resetar controles</string>
+    <string name="settings_swap_gestures">Trocar Gestos</string>
+    <string name="settings_disable_gestures">Desativar Gestos</string>
+    <string name="settings_buttons">Botões</string>
+    <string name="settings_virtual_mouse">Mouse virtual</string>
+    <string name="settings_gyroscope">Giroscópio</string>
+    <string name="settings_physical_controller">Controle físico</string>
+    <string name="settings_renderer">Renderizador</string>
+    <string name="settings_resolution_scale">Escala de resolução</string>
+    <string name="settings_choose_resolution_scale">Escolha a escala de resolução do jogo</string>
+    <string name="settings_force_vsync">Forçar VSync</string>
+    <string name="settings_vsync_zink">VSync no Zink</string>
+    <string name="settings_ignore_display_cutout">Ignorar recorte da tela</string>
+    <string name="settings_java_runtimes">Java Runtimes</string>
+    <string name="settings_jvm_arguments">Argumentos JVM</string>
+    <string name="settings_ram_amount">Quantidade de RAM</string>
+    <string name="settings_java_sandbox">Sandbox do Java</string>
+    <string name="settings_save_shaders_log">Salvar shaders no log</string>
+    <string name="settings_force_sodium">Forçar execução do Sodium</string>
+    <!-- Interface Compose de login -->
+    <string name="login_welcome">BEM-VINDO</string>
+    <string name="login_microsoft">Entrar com Microsoft</string>
+    <string name="login_offline">Entrar Offline</string>
+    <string name="login_username">Nome de usuário</string>
+    <string name="login_enter">Entrar</string>
+    <string name="login_title">LOGIN</string>
+    <string name="login_invalid_username">Use de 3 a 16 caracteres: letras, números ou _</string>
+    <string name="login_description_journey">SUA JORNADA </string>
+    <string name="login_description_cobblemon">COBBLEMON</string>
+    <string name="login_description_online">ONLINE</string>
+    <string name="login_description_starts"> COMEÇA AQUI!</string>
+    <string name="login_description_prepare">PREPARE-SE PARA UMA</string>
+    <string name="login_description_unique_adventure">AVENTURA ÚNICA</string>
+    <string name="login_description_in_world"> NO MUNDO</string>
+    <string name="login_description_final">DO COBBLEMON! AQUI.</string>
+    <string name="update_cancelled">Atualização cancelada. Você pode tentar novamente.</string>
+    <string name="update_preparing">Preparando download pela Google Play…</string>
+    <string name="update_downloading">Baixando atualização pela Google Play…</string>
+    <string name="update_ready">Atualização pronta. Reinicie para concluir.</string>
+    <string name="update_download_failed">A Google Play não conseguiu baixar a atualização.</string>
+    <string name="update_download_cancelled">Download cancelado.</string>
+    <string name="update_checking">Consultando a Google Play…</string>
+    <string name="update_check_failed">Não foi possível consultar a Google Play.</string>
+    <string name="update_available">Uma nova versão está disponível na Google Play.</string>
+    <string name="update_up_to_date">Você está usando a versão mais recente.</string>
+    <string name="update_open_failed">Não foi possível abrir a atualização da Google Play.</string>
 </resources>

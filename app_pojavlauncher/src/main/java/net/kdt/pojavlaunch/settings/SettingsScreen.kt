@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -194,7 +195,7 @@ fun SettingsScreen(
          * =========================================================
          */
         Text(
-            text = "CONFIGURAÇÕES",
+            text = stringResource(R.string.settings_title),
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = 18.dp),

@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import net.kdt.pojavlaunch.BuildConfig
@@ -92,14 +93,14 @@ public fun AboutSettingsScreen(
          */
 
         Text(
-            text = "Sobre",
+            text = stringResource(R.string.settings_about),
             color = Color.White,
             fontFamily = MinecraftFont,
             fontSize = 15.sp
         )
 
         Text(
-            text = "Sobre o Launcher",
+            text = stringResource(R.string.settings_about_launcher),
             color = Color(0xFF777777),
             fontFamily = MinecraftFont,
             fontSize = 9.sp
@@ -342,7 +343,7 @@ public fun AboutSettingsScreen(
              * Desempenho
              */
             AboutReleaseSection(
-                title = "Status",
+                title = stringResource(R.string.settings_status),
                 description = updateState.message
                     ?: "A Google Play mantém o launcher atualizado automaticamente."
             )
@@ -356,7 +357,7 @@ public fun AboutSettingsScreen(
              * Segurança
              */
             AboutReleaseSection(
-                title = "Novidades",
+                title = stringResource(R.string.settings_whats_new),
                 description =
                     "Consulte as novidades e o histórico da versão na página do launcher na Google Play."
             )

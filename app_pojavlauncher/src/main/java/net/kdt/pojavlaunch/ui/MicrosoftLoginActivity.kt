@@ -1,6 +1,7 @@
 package net.kdt.pojavlaunch.ui
 
 import android.content.Intent
+import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -21,8 +22,13 @@ import net.kdt.pojavlaunch.extra.ExtraConstants
 import net.kdt.pojavlaunch.extra.ExtraCore
 import net.kdt.pojavlaunch.extra.ExtraListener
 import net.kdt.pojavlaunch.value.MinecraftAccount
+import net.kdt.pojavlaunch.utils.LocaleUtils
 
 class MicrosoftLoginActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleUtils.setLocale(newBase))
+    }
 
     override fun onCreate(
         savedInstanceState: Bundle?

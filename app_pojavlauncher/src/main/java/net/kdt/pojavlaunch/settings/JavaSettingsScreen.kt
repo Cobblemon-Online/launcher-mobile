@@ -11,6 +11,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -153,7 +154,7 @@ fun JavaSettingsScreen(
     ) {
 
         SettingsPageHeader(
-            title = "Ajustes do Java",
+            title = stringResource(R.string.settings_java_tweaks),
             description =
                 "Java Runtimes, argumentos JVM, memória e sandbox"
         )
@@ -166,7 +167,7 @@ fun JavaSettingsScreen(
          */
 
         SettingsActionCard(
-            title = "Java Runtimes",
+            title = stringResource(R.string.settings_java_runtimes),
             description =
                 "Gerencie, instale e selecione as versões do Java disponíveis.",
             onClick = onOpenRuntimeManager
@@ -183,7 +184,7 @@ fun JavaSettingsScreen(
          */
 
         SettingsActionCard(
-            title = "Argumentos JVM",
+            title = stringResource(R.string.settings_jvm_arguments),
             description =
                 if (javaArgs.isBlank()) {
                     "Nenhum argumento personalizado definido."
@@ -211,7 +212,7 @@ fun JavaSettingsScreen(
          */
 
         SettingsSliderCard(
-            title = "Quantidade de RAM",
+            title = stringResource(R.string.settings_ram_amount),
             description =
                 "Memória reservada para o Minecraft.",
             value = ramAllocation,
@@ -246,7 +247,7 @@ fun JavaSettingsScreen(
          */
 
         SettingsSwitchCard(
-            title = "Sandbox do Java",
+            title = stringResource(R.string.settings_java_sandbox),
             description =
                 "Restringe o acesso do Java ao sistema Android para aumentar a segurança.",
             checked =

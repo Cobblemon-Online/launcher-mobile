@@ -22,6 +22,7 @@ import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
 import net.kdt.pojavlaunch.LauncherActivity
+import net.kdt.pojavlaunch.R
 import net.kdt.pojavlaunch.Tools
 import net.kdt.pojavlaunch.fragments.MicrosoftLoginFragment
 import net.kdt.pojavlaunch.contracts.OpenDocumentWithExtension
@@ -63,7 +64,7 @@ class SettingsComposeFragment : Fragment() {
         ) {
             updateState = updateState.copy(
                 status = PlayUpdateStatus.AVAILABLE,
-                message = "Atualização cancelada. Você pode tentar novamente."
+                message = getString(R.string.update_cancelled)
             )
         }
     }
@@ -72,7 +73,7 @@ class SettingsComposeFragment : Fragment() {
         updateState = when (state.installStatus()) {
             InstallStatus.PENDING -> PlayUpdateUiState(
                 status = PlayUpdateStatus.DOWNLOADING,
-                message = "Preparando download pela Google Play..."
+                message = getString(R.string.update_preparing)
             )
 
             InstallStatus.DOWNLOADING -> {
@@ -85,23 +86,23 @@ class SettingsComposeFragment : Fragment() {
                 PlayUpdateUiState(
                     status = PlayUpdateStatus.DOWNLOADING,
                     progressPercent = progress,
-                    message = "Baixando atualização pela Google Play..."
+                    message = getString(R.string.update_downloading)
                 )
             }
 
             InstallStatus.DOWNLOADED -> PlayUpdateUiState(
                 status = PlayUpdateStatus.READY_TO_INSTALL,
-                message = "Atualização pronta. Reinicie para concluir."
+                message = getString(R.string.update_ready)
             )
 
             InstallStatus.FAILED -> PlayUpdateUiState(
                 status = PlayUpdateStatus.ERROR,
-                message = "A Google Play não conseguiu baixar a atualização."
+                message = getString(R.string.update_download_failed)
             )
 
             InstallStatus.CANCELED -> PlayUpdateUiState(
                 status = PlayUpdateStatus.AVAILABLE,
-                message = "Download cancelado."
+                message = getString(R.string.update_download_cancelled)
             )
 
             else -> updateState
@@ -142,7 +143,7 @@ class SettingsComposeFragment : Fragment() {
     private fun checkForUpdate() {
         updateState = PlayUpdateUiState(
             status = PlayUpdateStatus.CHECKING,
-            message = "Consultando a Google Play..."
+            message = getString(R.string.update_checking)
         )
 
         appUpdateManager.appUpdateInfo
@@ -150,7 +151,7 @@ class SettingsComposeFragment : Fragment() {
             .addOnFailureListener {
                 updateState = PlayUpdateUiState(
                     status = PlayUpdateStatus.ERROR,
-                    message = "Não foi possível consultar a Google Play."
+                    message = getString(R.string.update_check_failed)
                 )
             }
     }
@@ -160,7 +161,7 @@ class SettingsComposeFragment : Fragment() {
             if (info.installStatus() == InstallStatus.DOWNLOADED) {
                 updateState = PlayUpdateUiState(
                     status = PlayUpdateStatus.READY_TO_INSTALL,
-                    message = "Atualização pronta. Reinicie para concluir."
+                    message = getString(R.string.update_ready)
                 )
             }
         }
@@ -171,19 +172,19 @@ class SettingsComposeFragment : Fragment() {
         updateState = when {
             info.installStatus() == InstallStatus.DOWNLOADED -> PlayUpdateUiState(
                 status = PlayUpdateStatus.READY_TO_INSTALL,
-                message = "Atualização pronta. Reinicie para concluir."
+                message = getString(R.string.update_ready)
             )
 
             info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE &&
                 info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE) -> PlayUpdateUiState(
                 status = PlayUpdateStatus.AVAILABLE,
                 availableVersionCode = info.availableVersionCode(),
-                message = "Uma nova versão está disponível na Google Play."
+                message = getString(R.string.update_available)
             )
 
             else -> PlayUpdateUiState(
                 status = PlayUpdateStatus.UP_TO_DATE,
-                message = "Você está usando a versão mais recente."
+                message = getString(R.string.update_up_to_date)
             )
         }
     }
@@ -203,7 +204,7 @@ class SettingsComposeFragment : Fragment() {
         }.onFailure {
             updateState = PlayUpdateUiState(
                 status = PlayUpdateStatus.ERROR,
-                message = "Não foi possível abrir a atualização da Google Play."
+                message = getString(R.string.update_open_failed)
             )
         }
     }

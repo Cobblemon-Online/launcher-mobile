@@ -9,6 +9,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import net.kdt.pojavlaunch.R
 
 enum class LauncherSettingsPage {
     MAIN,
@@ -16,6 +18,7 @@ enum class LauncherSettingsPage {
     CONTROLS,
     JAVA,
     MISC,
+    LANGUAGE,
     EXPERIMENTAL
 }
 
@@ -50,6 +53,11 @@ fun LauncherSettingsScreen(
             return
         }
 
+        LauncherSettingsPage.LANGUAGE -> {
+            LanguageSettingsScreen()
+            return
+        }
+
         LauncherSettingsPage.EXPERIMENTAL -> {
             ExperimentalSettingsScreen()
             return
@@ -75,8 +83,8 @@ fun LauncherSettingsScreen(
     ) {
 
         SettingsPageHeader(
-            title = "Launcher",
-            description = "Gerencie seu launcher"
+            title = stringResource(R.string.settings_launcher),
+            description = stringResource(R.string.settings_manage_launcher)
         )
         /*
          * =========================
@@ -85,8 +93,8 @@ fun LauncherSettingsScreen(
          */
 
         SettingsActionCard(
-            title = "Vídeo e Renderizador",
-            description = "Resolução e desempenho",
+            title = stringResource(R.string.settings_video_renderer),
+            description = stringResource(R.string.settings_resolution_performance),
             onClick = {
                 onPageChange(
                     LauncherSettingsPage.VIDEO
@@ -108,8 +116,8 @@ fun LauncherSettingsScreen(
          */
 
         SettingsActionCard(
-            title = "Controles",
-            description = "Gestos, botões e escala",
+            title = stringResource(R.string.settings_controls),
+            description = stringResource(R.string.settings_controls_description),
             onClick = {
                 onPageChange(
                     LauncherSettingsPage.CONTROLS
@@ -128,7 +136,7 @@ fun LauncherSettingsScreen(
          */
 
         SettingsActionCard(
-            title = "Ajustes do Java",
+            title = stringResource(R.string.settings_java_tweaks),
             description =
                 "Java Runtimes, argumentos JVM, quantidade de RAM e sandbox",
             onClick = {
@@ -149,11 +157,25 @@ fun LauncherSettingsScreen(
          */
 
         SettingsActionCard(
-            title = "Configurações diversas",
-            description = "Organize seu jogo",
+            title = stringResource(R.string.settings_miscellaneous),
+            description = stringResource(R.string.settings_organize_game),
             onClick = {
                 onPageChange(
                     LauncherSettingsPage.MISC
+                )
+            }
+        )
+
+        Spacer(
+            modifier = Modifier.height(8.dp)
+        )
+
+        SettingsActionCard(
+            title = stringResource(R.string.settings_language),
+            description = stringResource(R.string.settings_change_language),
+            onClick = {
+                onPageChange(
+                    LauncherSettingsPage.LANGUAGE
                 )
             }
         )
@@ -169,7 +191,7 @@ fun LauncherSettingsScreen(
          */
 
         SettingsActionCard(
-            title = "Opções experimentais",
+            title = stringResource(R.string.settings_experimental),
             description =
                 "Não fornecemos suporte a essas opções",
             onClick = {

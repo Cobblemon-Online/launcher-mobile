@@ -71,6 +71,7 @@ import java.net.InetSocketAddress
 import java.net.Socket
 import java.net.URL
 import kotlin.math.roundToInt
+import androidx.compose.ui.res.stringResource
 
 private val HomeMinecraftFont =
     FontFamily(
@@ -147,7 +148,9 @@ fun LauncherHomeScreen(
                             R.drawable.ic_launcher_logo
                         ),
                     contentDescription =
-                        "Cobblemon Online",
+                        stringResource(
+                            R.string.app_name
+                        ),
                     modifier =
                         Modifier.fillMaxWidth(),
                     contentScale =
@@ -195,10 +198,10 @@ fun LauncherHomeScreen(
             PlayHomeButton(
                 modifier = Modifier
                     .align(
-                        Alignment.Center
+                        Alignment.BottomCenter
                     )
-                    .offset(
-                        y = 35.dp
+                    .padding(
+                        bottom = 45.dp + 22.dp
                     ),
                 enabled = !loading,
                 onClick = onPlay
@@ -290,7 +293,9 @@ private fun SettingsHomeButton(
                         R.drawable.ic_settings_1
                     ),
                 contentDescription =
-                    "Configurações",
+                    stringResource(
+                        R.string.home_settings
+                    ),
                 modifier =
                     Modifier.size(18.dp),
                 contentScale =
@@ -303,7 +308,9 @@ private fun SettingsHomeButton(
             )
 
             Text(
-                text = "CONFIGURAÇÕES",
+                stringResource(
+                    R.string.home_settings
+                ).uppercase(),
                 color = Color.White,
                 fontFamily =
                     HomeMinecraftFont,
@@ -431,7 +438,10 @@ private fun PlayHomeButton(
          * =====================================
          */
         Text(
-            text = "JOGAR",
+            text =
+                stringResource(
+                    R.string.main_play
+                ).uppercase(),
             color = Color.White,
             fontFamily =
                 HomeMinecraftBoldFont,
@@ -499,7 +509,9 @@ private fun PlayerHeader(
             Image(
                 bitmap = avatar,
                 contentDescription =
-                    "Skin do jogador",
+                    stringResource(
+                        R.string.home_player_skin
+                    ),
                 modifier =
                     Modifier.size(32.dp),
                 contentScale =
@@ -571,7 +583,9 @@ private fun SocialBar(
             icon =
                 R.drawable.ic_instagram_grey_1,
             description =
-                "Instagram",
+                stringResource(
+                    R.string.social_instagram_name
+                ),
             onClick = {
                 onSocial(
                     R.string.social_instagram_url
@@ -583,7 +597,9 @@ private fun SocialBar(
             icon =
                 R.drawable.ic_discord_grey_1,
             description =
-                "Discord",
+                stringResource(
+                    R.string.social_discord_name
+                ),
             onClick = {
                 onSocial(
                     R.string.social_discord_url
@@ -595,7 +611,9 @@ private fun SocialBar(
             icon =
                 R.drawable.ic_tiktok_grey_1,
             description =
-                "TikTok",
+                stringResource(
+                    R.string.social_tiktok_name
+                ),
             onClick = {
                 onSocial(
                     R.string.social_tiktok_url
@@ -607,7 +625,9 @@ private fun SocialBar(
             icon =
                 R.drawable.ic_twitter_grey_1,
             description =
-                "Twitter",
+                stringResource(
+                    R.string.social_x_name
+                ),
             onClick = {
                 onSocial(
                     R.string.social_x_url
@@ -619,7 +639,9 @@ private fun SocialBar(
             icon =
                 R.drawable.ic_youtube_grey_1,
             description =
-                "YouTube",
+                stringResource(
+                    R.string.social_youtube_name
+                ),
             onClick = {
                 onSocial(
                     R.string.social_youtube_url
@@ -811,10 +833,14 @@ private fun ServerPlayersCard(
     val valueText =
         when {
             state.loading ->
-                "..."
+                stringResource(
+                    R.string.home_server_checking_value
+                )
 
             state.status == null ->
-                "X"
+                stringResource(
+                    R.string.home_server_offline_value
+                )
 
             else ->
                 state.status
@@ -825,13 +851,19 @@ private fun ServerPlayersCard(
     val labelText =
         when {
             state.loading ->
-                "VERIFICANDO"
+                stringResource(
+                    R.string.home_server_checking
+                )
 
             state.status == null ->
-                "SERVIDOR OFFLINE"
+                stringResource(
+                    R.string.home_server_offline
+                )
 
             else ->
-                "JOGADORES ONLINE"
+                stringResource(
+                    R.string.home_players_online
+                )
         }
 
     val valueColor =
@@ -855,10 +887,10 @@ private fun ServerPlayersCard(
     Box(
         modifier = modifier
             .width(
-                260.dp
+                250.dp
             )
             .height(
-                56.dp
+                45.dp
             )
             .background(
                 Color(

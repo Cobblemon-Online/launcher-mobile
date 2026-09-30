@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -75,14 +76,14 @@ public fun AccountSettingsScreen(
     ) {
 
         Text(
-            text = "Conta",
+            text = stringResource(R.string.settings_account),
             color = Color.White,
             fontFamily = MinecraftFont,
             fontSize = 15.sp
         )
 
         Text(
-            text = "Gerencie suas contas",
+            text = stringResource(R.string.settings_manage_accounts),
             color = Color(0xFF8D8D8D),
             fontFamily = MinecraftFont,
             fontSize = 10.sp
@@ -122,7 +123,7 @@ public fun AccountSettingsScreen(
         )
 
         Text(
-            text = "Trocar de conta",
+            text = stringResource(R.string.settings_change_account),
             color = Color.White,
             fontFamily = MinecraftFont,
             fontSize = 15.sp
@@ -180,7 +181,7 @@ public fun AccountSettingsScreen(
         AddAccountCard(
             icon = R.drawable.ic_microsoft,
             title = "MICROSOFT",
-            action = "+ ADICIONAR CONTA",
+            action = stringResource(R.string.settings_add_account),
             onClick = onAddMicrosoftAccount
         )
 
@@ -191,8 +192,8 @@ public fun AccountSettingsScreen(
         // ADICIONAR OFFLINE
         AddAccountCard(
             icon = R.drawable.ic_pirate,
-            title = "CONTA OFFLINE",
-            action = "+ ADICIONAR CONTA",
+            title = stringResource(R.string.settings_offline_account),
+            action = stringResource(R.string.settings_add_account),
             onClick = onAddOfflineAccount
         )
     }
@@ -241,7 +242,7 @@ private fun OfflineAccountDialog(
             Column {
 
                 Text(
-                    text = "CONTA OFFLINE",
+                    text = stringResource(R.string.settings_offline_account),
                     color = Color.White,
                     fontFamily = MinecraftBoldFont,
                     fontSize = 13.sp
@@ -253,7 +254,7 @@ private fun OfflineAccountDialog(
                 )
 
                 Text(
-                    text = "Escolha o nick que será usado no jogo.",
+                    text = stringResource(R.string.settings_offline_account_description),
                     color = Color(0xFF888888),
                     fontFamily = MinecraftFont,
                     fontSize = 8.sp
@@ -289,7 +290,7 @@ private fun OfflineAccountDialog(
                     if (username.isEmpty()) {
 
                         Text(
-                            text = "Nick",
+                            text = stringResource(R.string.settings_nickname),
                             color = Color(0xFF666666),
                             fontFamily = MinecraftFont,
                             fontSize = 9.sp
@@ -348,7 +349,7 @@ private fun OfflineAccountDialog(
                 ) {
 
                     Text(
-                        text = "CANCELAR",
+                        text = stringResource(R.string.settings_cancel),
                         color = Color(0xFF888888),
                         fontFamily = MinecraftFont,
                         fontSize = 8.sp,
@@ -365,7 +366,7 @@ private fun OfflineAccountDialog(
                     )
 
                     Text(
-                        text = "ADICIONAR",
+                        text = stringResource(R.string.settings_add),
                         color = Color.White,
                         fontFamily = MinecraftBoldFont,
                         fontSize = 8.sp,
@@ -491,7 +492,7 @@ private fun AccountCard(
 
             Image(
                 painter = painterResource(R.drawable.ic_change),
-                contentDescription = "Trocar conta",
+                contentDescription = stringResource(R.string.settings_switch_account),
                 modifier = Modifier
                     .width(17.dp)
                     .clickable {
@@ -507,7 +508,7 @@ private fun AccountCard(
         // Botão de excluir aparece em TODAS as contas
         Image(
             painter = painterResource(R.drawable.ic_trash),
-            contentDescription = "Excluir conta",
+            contentDescription = stringResource(R.string.settings_delete_account),
             modifier = Modifier
                 .width(17.dp)
                 .clickable {
