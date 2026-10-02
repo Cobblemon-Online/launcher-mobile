@@ -92,7 +92,19 @@ fun LauncherHomeScreen(
     onPlay: () -> Unit,
     onSettings: () -> Unit,
     onSocial: (Int) -> Unit
-){
+) {
+
+    val screenId =
+        remember {
+            System.identityHashCode(Any())
+        }
+
+    android.util.Log.d(
+        "COMPOSE_LOADING",
+        "LauncherHomeScreen[$screenId] " +
+                "loading=$loading " +
+                "progress=$loadingProgress"
+    )
 
     val username =
         rememberCurrentUsername(
@@ -195,17 +207,32 @@ fun LauncherHomeScreen(
              * JOGAR
              * =====================================
              */
-            PlayHomeButton(
-                modifier = Modifier
-                    .align(
-                        Alignment.BottomCenter
-                    )
-                    .padding(
-                        bottom = 45.dp + 22.dp
-                    ),
-                enabled = !loading,
-                onClick = onPlay
-            )
+            if (!loading) {
+
+                android.util.Log.d(
+                    "COMPOSE_LOADING",
+                    "LauncherHomeScreen[$screenId] -> MOSTRANDO PLAY"
+                )
+
+                PlayHomeButton(
+                    modifier = Modifier
+                        .align(
+                            Alignment.BottomCenter
+                        )
+                        .padding(
+                            bottom = 45.dp + 22.dp
+                        ),
+                    enabled = true,
+                    onClick = onPlay
+                )
+
+            } else {
+
+                android.util.Log.d(
+                    "COMPOSE_LOADING",
+                    "LauncherHomeScreen[$screenId] -> ESCONDENDO PLAY"
+                )
+            }
 
             /*
              * =====================================
@@ -235,7 +262,8 @@ fun LauncherHomeScreen(
                     ),
                 loading = loading,
                 loadingProgress = loadingProgress,
-                onSocial = onSocial
+                onSocial = onSocial,
+                screenId = screenId
             )
         }
     }
@@ -535,7 +563,8 @@ private fun HomeBottomBar(
     modifier: Modifier = Modifier,
     loading: Boolean,
     loadingProgress: Float,
-    onSocial: (Int) -> Unit
+    onSocial: (Int) -> Unit,
+    screenId: Int
 ) {
 
     Box(
@@ -552,11 +581,21 @@ private fun HomeBottomBar(
 
         if (loading) {
 
+            android.util.Log.d(
+                "COMPOSE_LOADING",
+                "LauncherHomeScreen[$screenId] -> MOSTRANDO LOADING BAR"
+            )
+
             LoadingBottomBar(
                 progress = loadingProgress
             )
 
         } else {
+
+            android.util.Log.d(
+                "COMPOSE_LOADING",
+                "LauncherHomeScreen[$screenId] -> MOSTRANDO SOCIAL BAR"
+            )
 
             SocialBar(
                 onSocial = onSocial

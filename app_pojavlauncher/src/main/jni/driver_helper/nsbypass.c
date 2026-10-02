@@ -54,17 +54,23 @@ struct android_namespace_t* local_android_create_namespace(
 
 // Find the first "branch to label" function in the function provided in func_start
 static void* find_branch_label(void* func_start) {
+    long page_size = sysconf(_SC_PAGESIZE);
+
     // round down the pointer to get the start of the function's page
-    void* func_page_start = (void*)(((uintptr_t)func_start) & ~(PAGE_SIZE-1));
+    void* func_page_start =
+            (void*)(((uintptr_t)func_start) & ~((uintptr_t)page_size - 1));
+
     // remap to r-x to bypass "execute only" protections on MIUI
-    mprotect(func_page_start, PAGE_SIZE, PROT_READ | PROT_EXEC);
+    mprotect(func_page_start, (size_t)page_size, PROT_READ | PROT_EXEC);
+
     uint32_t* bl_addr = func_start;
+
     // search for the "branch to label" opcode
     while((*bl_addr & OP_MS) != BL_OP) {
-        bl_addr++; // walk through memory until we find it or die
+        bl_addr++;
     }
-    // offset the address to find where the "branch to label" instrunction
-    // points to.
+
+    // offset the address to find where the "branch to label" instruction points to.
     return ((char*)bl_addr) + (*bl_addr & BL_IM) * 4;
 }
 

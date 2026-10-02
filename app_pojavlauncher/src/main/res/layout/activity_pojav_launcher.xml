@@ -60,14 +60,6 @@
         android:gravity="center_horizontal">
 
 
-        <Button
-            android:id="@+id/play_button"
-            android:layout_width="220dp"
-            android:layout_height="64dp"
-            android:text="JOGAR"
-            android:textSize="20sp" />
-
-
         <Space
             android:layout_width="1dp"
             android:layout_height="16dp" />

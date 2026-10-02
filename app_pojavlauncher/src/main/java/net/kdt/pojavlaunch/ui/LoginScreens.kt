@@ -641,7 +641,7 @@ private fun LoginSocialBar(
 
         LoginSocialButton(
             icon =
-                R.drawable.ic_instagram_grey_1,
+                R.drawable.ic_instagram_color,
             description =
                 stringResource(R.string.social_instagram_name),
             onClick = {
@@ -654,7 +654,7 @@ private fun LoginSocialBar(
 
         LoginSocialButton(
             icon =
-                R.drawable.ic_discord_grey_1,
+                R.drawable.ic_discord_color,
             description =
                 stringResource(R.string.social_discord_name),
             onClick = {
@@ -667,7 +667,7 @@ private fun LoginSocialBar(
 
         LoginSocialButton(
             icon =
-                R.drawable.ic_tiktok_grey_1,
+                R.drawable.ic_tiktok_color,
             description =
                 stringResource(R.string.social_tiktok_name),
             onClick = {
@@ -680,7 +680,7 @@ private fun LoginSocialBar(
 
         LoginSocialButton(
             icon =
-                R.drawable.ic_twitter_grey_1,
+                R.drawable.ic_twitter_color,
             description =
                 stringResource(R.string.social_x_name),
             onClick = {
@@ -693,7 +693,7 @@ private fun LoginSocialBar(
 
         LoginSocialButton(
             icon =
-                R.drawable.ic_youtube_grey_1,
+                R.drawable.ic_youtube_color,
             description =
                 stringResource(R.string.social_youtube_name),
             onClick = {

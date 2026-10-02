@@ -130,6 +130,27 @@ public class LauncherActivity extends BaseActivity {
 
     private float mLauncherLoadingProgress =
             0f;
+
+    private int mActiveProgressCount =
+            0;
+
+    /*
+     * Quantidade de tasks atualmente registradas no ProgressKeeper.
+     *
+     * O estado visual de loading não deve depender apenas deste valor,
+     * porque a preparação manual de um modpack também pode continuar
+     * executando entre uma task e outra.
+     */
+    private int mProgressTaskCount =
+            0;
+
+    /*
+     * Cobre o pequeno intervalo entre o clique em Jogar e o momento
+     * em que o MinecraftDownloader registra sua primeira task no
+     * ProgressKeeper.
+     */
+    private boolean mLaunchPipelineLoading =
+            false;
     // =========================================================
     // Views legadas
     // =========================================================
@@ -235,19 +256,46 @@ public class LauncherActivity extends BaseActivity {
     private final TaskCountListener mTaskCountListener =
             taskCount -> {
 
+                Log.d(
+                        "LAUNCH_LOADING",
+                        "TaskCountListener RECEBEU taskCount=" + taskCount
+                );
+
+
                 Tools.runOnUiThread(
                         () -> {
 
-                            boolean loading =
-                                    taskCount > 0;
-
-                            setLoading(
-                                    loading
+                            Log.d(
+                                    "LAUNCH_LOADING",
+                                    "TaskCountListener UI" +
+                                            " | antigo=" + mProgressTaskCount +
+                                            " | novo=" + taskCount
                             );
 
 
+                            mProgressTaskCount =
+                                    taskCount;
+
+
                             if (
-                                    loading
+                                    taskCount > 0
+                            ) {
+
+                                Log.d(
+                                        "LAUNCH_LOADING",
+                                        "TaskCount > 0 -> launchPipeline=false"
+                                );
+
+                                mLaunchPipelineLoading =
+                                        false;
+                            }
+
+
+                            updateLoadingState();
+
+
+                            if (
+                                    taskCount > 0
                                             && mNotificationManager
                                             != null
                             ) {
@@ -266,10 +314,32 @@ public class LauncherActivity extends BaseActivity {
                 @Override
                 public void onProgressStarted() {
 
+                    Log.d(
+                            "LAUNCH_LOADING",
+                            "onProgressStarted()"
+                    );
+
+
                     Tools.runOnUiThread(
-                            () -> setLoadingProgress(
-                                    0f
-                            )
+                            () -> {
+
+                                mActiveProgressCount++;
+
+
+                                Log.d(
+                                        "LAUNCH_LOADING",
+                                        "onProgressStarted UI" +
+                                                " | activeProgressCount=" +
+                                                mActiveProgressCount
+                                );
+
+
+                                setLoadingProgress(
+                                        0f
+                                );
+
+                                updateLoadingState();
+                            }
                     );
                 }
 
@@ -281,10 +351,16 @@ public class LauncherActivity extends BaseActivity {
                         Object... va
                 ) {
 
-                    /*
-                     * Alguns processos podem usar -1
-                     * quando não existe progresso numérico.
-                     */
+                    Log.d(
+                            "LAUNCH_LOADING",
+                            "onProgressUpdated()" +
+                                    " | progress=" + progress +
+                                    " | resid=" + resid +
+                                    " | activeProgressCount=" +
+                                    mActiveProgressCount
+                    );
+
+
                     if (
                             progress < 0
                     ) {
@@ -314,13 +390,38 @@ public class LauncherActivity extends BaseActivity {
                 @Override
                 public void onProgressEnded() {
 
-                    /*
-                     * Não zeramos aqui.
-                     *
-                     * Outra etapa pode começar logo depois.
-                     * setLoading(false) cuidará do reset
-                     * quando todo o carregamento terminar.
-                     */
+                    Log.d(
+                            "LAUNCH_LOADING",
+                            "onProgressEnded()"
+                    );
+
+
+                    Tools.runOnUiThread(
+                            () -> {
+
+                                int oldCount =
+                                        mActiveProgressCount;
+
+
+                                mActiveProgressCount =
+                                        Math.max(
+                                                0,
+                                                mActiveProgressCount - 1
+                                        );
+
+
+                                Log.d(
+                                        "LAUNCH_LOADING",
+                                        "onProgressEnded UI" +
+                                                " | old=" + oldCount +
+                                                " | new=" +
+                                                mActiveProgressCount
+                                );
+
+
+                                updateLoadingState();
+                            }
+                    );
                 }
             };
 
@@ -777,9 +878,42 @@ public class LauncherActivity extends BaseActivity {
     // Loading
     // =========================================================
 
+    private void updateLoadingState() {
+
+        boolean loading =
+                mProgressTaskCount > 0
+                        || mActiveProgressCount > 0
+                        || mPreparingManagedPackId != null
+                        || mLaunchPipelineLoading;
+
+
+        Log.d(
+                "LAUNCH_LOADING",
+                "updateLoadingState()" +
+                        " | loading=" + loading +
+                        " | progressTaskCount=" + mProgressTaskCount +
+                        " | activeProgressCount=" + mActiveProgressCount +
+                        " | preparingPack=" + mPreparingManagedPackId +
+                        " | launchPipeline=" + mLaunchPipelineLoading
+        );
+
+
+        setLoading(
+                loading
+        );
+    }
+
+
     private void setLoading(
             boolean loading
     ) {
+
+        Log.d(
+                "LAUNCH_LOADING",
+                "setLoading(" + loading + ")" +
+                        " | ANTES mLauncherLoading=" + mLauncherLoading
+        );
+
 
         mLauncherLoading =
                 loading;
@@ -801,6 +935,18 @@ public class LauncherActivity extends BaseActivity {
                         );
 
 
+        Log.d(
+                "LAUNCH_LOADING",
+                "setLoading(" + loading + ")" +
+                        " | fragment=" +
+                        (
+                                fragment != null
+                                        ? fragment.getClass().getSimpleName()
+                                        : "null"
+                        )
+        );
+
+
         if (
                 fragment
                         instanceof LauncherHomeComposeFragment
@@ -810,6 +956,13 @@ public class LauncherActivity extends BaseActivity {
                     homeFragment =
                     (LauncherHomeComposeFragment)
                             fragment;
+
+
+            Log.d(
+                    "LAUNCH_LOADING",
+                    ">>> enviando loading=" + loading +
+                            " para LauncherHomeComposeFragment"
+            );
 
 
             homeFragment.setLoadingState(
@@ -825,6 +978,13 @@ public class LauncherActivity extends BaseActivity {
                         0f
                 );
             }
+
+        } else {
+
+            Log.w(
+                    "LAUNCH_LOADING",
+                    "setLoading não encontrou LauncherHomeComposeFragment"
+            );
         }
     }
 
@@ -1035,9 +1195,14 @@ public class LauncherActivity extends BaseActivity {
                 packId;
 
 
-        setLoading(
-                true
+        Log.d(
+                "LAUNCH_LOADING",
+                "prepareManagedModpack START" +
+                        " | packId=" + packId
         );
+
+
+        updateLoadingState();
 
 
         Log.d(
@@ -1390,10 +1555,7 @@ public class LauncherActivity extends BaseActivity {
                                 } else {
 
                                     runOnUiThread(
-                                            () ->
-                                                    setLoading(
-                                                            false
-                                                    )
+                                            this::updateLoadingState
                                     );
                                 }
                             }
@@ -2067,9 +2229,10 @@ public class LauncherActivity extends BaseActivity {
         // Loading
         // =========================================
 
-        setLoading(
-                true
-        );
+        mLaunchPipelineLoading =
+                true;
+
+        updateLoadingState();
 
 
         // =========================================
