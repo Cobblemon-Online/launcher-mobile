@@ -14,6 +14,7 @@ import javax.annotation.*;
 import org.lwjgl.*;
 import org.lwjgl.system.*;
 import org.lwjgl.system.MemoryUtil;
+import static org.lwjgl.opengl.GL30.*;
 
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.system.APIUtil.*;
